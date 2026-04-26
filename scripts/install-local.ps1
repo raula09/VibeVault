@@ -18,7 +18,8 @@ dotnet publish (Join-Path $RootDir "VibeVault.csproj") `
   -o $publishDir
 
 New-Item -ItemType Directory -Force -Path $installDir | Out-Null
-Copy-Item (Join-Path $publishDir "VibeVault.exe") $targetExe -Force
+Copy-Item (Join-Path $publishDir "*") $installDir -Force
+Copy-Item (Join-Path $installDir "VibeVault.exe") $targetExe -Force
 
 Write-Host "Installed: $targetExe"
 
