@@ -21,4 +21,15 @@ New-Item -ItemType Directory -Force -Path $installDir | Out-Null
 Copy-Item (Join-Path $publishDir "VibeVault.exe") $targetExe -Force
 
 Write-Host "Installed: $targetExe"
-Write-Host "If needed, add this directory to PATH: $installDir"
+
+$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if (($userPath -split ";") -contains $installDir) {
+  Write-Host "Run with: vibevault"
+  exit 0
+}
+
+$newUserPath = if ([string]::IsNullOrWhiteSpace($userPath)) { $installDir } else { "$userPath;$installDir" }
+[Environment]::SetEnvironmentVariable("Path", $newUserPath, "User")
+
+Write-Host "Added to user PATH: $installDir"
+Write-Host "Open a new terminal, then run: vibevault"
