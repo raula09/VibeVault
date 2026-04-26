@@ -22,6 +22,7 @@ VibeVault currently imports and indexes MP3 files only.
 | Dependency | Required | Purpose |
 |------------|----------|---------|
 | .NET SDK 10.0+ | Yes | Build and run app |
+| Docker (optional) | No | Reproducible release builds without local .NET install |
 | Tessera | Yes | TUI framework |
 | Microsoft.Data.Sqlite | Yes | Persistent library/playlists |
 | TagLibSharp | Yes | MP3 metadata parsing |
@@ -60,6 +61,19 @@ chmod +x scripts/publish-all.sh
 ```
 
 Artifacts are written to `dist/<version>/<rid>/`.
+
+### Build Release Artifacts With Docker
+
+Use this if you want reproducible publish output from a clean containerized toolchain.
+
+```bash
+chmod +x scripts/publish-all-docker.sh
+./scripts/publish-all-docker.sh v1.0.0
+```
+
+Artifacts are written to `dist/<version>/<rid>/`.
+
+Docker is best for building and packaging. For running VibeVault itself (TUI + host audio backends), native install is usually better than running inside a container.
 
 ### Run From Source
 
