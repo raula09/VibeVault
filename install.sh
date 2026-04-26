@@ -6,11 +6,6 @@ if ! command -v git >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! command -v dotnet >/dev/null 2>&1; then
-  echo ".NET SDK is required"
-  exit 1
-fi
-
 TMP_DIR="$(mktemp -d)"
 cleanup() { rm -rf "${TMP_DIR}"; }
 trap cleanup EXIT

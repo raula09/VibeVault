@@ -44,7 +44,7 @@ Check out Tessera: https://georgetsouvaltzis.github.io/tessera/
 #### Linux / macOS
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/raula09/VibeVault/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/raula09/VibeVault/main/install.sh | bash
 ```
 
 #### Windows (PowerShell)
@@ -152,14 +152,7 @@ For this project, terminal install is better for active development and quick te
 
 ## Backends
 
-Audio backend is auto-selected from available executables.
-
-| Backend | Used For |
-|---------|----------|
-| `mpv` | Playback (preferred if present) |
-| `ffplay` | Playback fallback |
-| `mpg123` | Playback fallback |
-| `cvlc` / `vlc` | Playback fallback |
+Terminal installer bootstraps one supported audio backend (`ffplay`, `mpv`, `mpg123`, or `vlc`) when none are available, then VibeVault auto-detects what is installed.
 
 ## Files
 

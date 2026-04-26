@@ -4,10 +4,6 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
   throw "git is required."
 }
 
-if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
-  throw ".NET SDK is required."
-}
-
 $tmpDir = Join-Path $env:TEMP ("VibeVault-install-" + [Guid]::NewGuid().ToString("N"))
 git clone --depth 1 https://github.com/raula09/VibeVault.git $tmpDir | Out-Null
 
