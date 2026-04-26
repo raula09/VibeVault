@@ -7,7 +7,7 @@ $rid = "win-$arch"
 
 $publishDir = Join-Path $RootDir "dist\local-install\$rid"
 $installDir = Join-Path $env:LOCALAPPDATA "Programs\VibeVault"
-$targetExe = Join-Path $installDir "vibevault.exe"
+$targetExe = Join-Path $installDir "VibeVault.exe"
 
 dotnet publish (Join-Path $RootDir "VibeVault.csproj") `
   -c Release `
@@ -19,7 +19,6 @@ dotnet publish (Join-Path $RootDir "VibeVault.csproj") `
 
 New-Item -ItemType Directory -Force -Path $installDir | Out-Null
 Copy-Item (Join-Path $publishDir "*") $installDir -Force
-Copy-Item (Join-Path $installDir "VibeVault.exe") $targetExe -Force
 
 Write-Host "Installed: $targetExe"
 
