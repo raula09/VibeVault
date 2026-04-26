@@ -1,105 +1,159 @@
-# VibeVault 🎵
+# VibeVault
 
-A terminal-based music library manager and player built on the **Tessera** TUI framework.
+Terminal music library player written in C#.
 
+Listen to local MP3s in a fast keyboard-first TUI with playlists, search, timeline seeking, loudness meter, and album-art visual mode.
+
+## Supported Format
+
+VibeVault currently imports and indexes MP3 files only.
+
+| Capability | MP3 |
+|------------|-----|
+| Import from browser | Yes |
+| Playback | Yes |
+| Metadata read (title/artist/album/year/bpm) | Yes |
+| Embedded cover art visual mode | Yes (if cover exists) |
+
+## Installation
+
+### Requirements
+
+| Dependency | Required | Purpose |
+|------------|----------|---------|
+| .NET SDK 10.0+ | Yes | Build and run app |
+| Tessera | Yes | TUI framework |
+| Microsoft.Data.Sqlite | Yes | Persistent library/playlists |
+| TagLibSharp | Yes | MP3 metadata parsing |
+| `ffplay` / `mpv` / `mpg123` / `vlc` | Yes | Audio backend (auto-detected) |
+| `ffmpeg` or `avconv` | Optional | Loudness analysis and embedded cover extraction |
+
+### Cross-Platform Targets
+
+| OS | Architectures |
+|----|---------------|
+| Linux | `x64`, `arm64` |
+| macOS | `x64`, `arm64` |
+| Windows | `x64`, `arm64` |
+
+### Install (Terminal, Recommended)
+
+#### Linux / macOS
+
+```bash
+chmod +x scripts/install-local.sh
+./scripts/install-local.sh
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  VibeVault ✦ Now Playing                                    │
-│  NIGHT WINDOW                                               │
-│  Mina Vale  •  Velvet Proof  •  2024                        │
-│  [▶ playing]  [→ linear]  [library]                         │
-│  01:32 / 04:26   -02:54                                     │
-├──────────────────────────┬──────────────────────────────────┤
-│  Library · F1  ✦         │                                  │
-│  · Mina Vale – Night … 04:26  │  Player   BPM  92          │
-│  ◆ Mina Vale – Slow …   05:11  │           Year 2024       │
-│  · Lune Harbor – Rose … 03:47  │  Library  Tracks 5        │
-│  ● Vesper Choir – Cedar 04:41  │           Lists  2        │
-└──────────────────────────┴──────────────────────────────────┘
-  vibevault  playing Mina Vale – Night Window        F1 F2 F4 …
+
+#### Windows (PowerShell)
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install-local.ps1
 ```
 
-## Features
-- **SQLite library** – your tracks persist across sessions
-- **MP3-only import** – only `.mp3` files are shown when browsing
-- **ID3 tag reading** – title, artist, album, BPM, year extracted automatically
-- **Playlists** – create, rename, delete; add/remove tracks
-- **Player** – play/pause, next, previous, shuffle
-- **Purple + amber-gold** colour theme
+### Build Release Artifacts (All Platforms)
 
-## Prerequisites
+```bash
+chmod +x scripts/publish-all.sh
+./scripts/publish-all.sh v1.0.0
+```
 
-| Requirement | Version |
-|-------------|---------|
-| .NET SDK    | 9.0 +   |
-| Tessera NuGet | latest |
-| TagLibSharp  | 2.3.*  |
-| Microsoft.Data.Sqlite | 9.* |
-| External player | `ffplay` (recommended) / `mpv` / `mpg123` / `vlc` |
+Artifacts are written to `dist/<version>/<rid>/`.
+
+### Run From Source
 
 ```bash
 dotnet restore
 dotnet run
 ```
 
-> **Note**: Tessera is not yet published on NuGet.org.  
-> Reference your local build with a `<ProjectReference>` in the `.csproj` if needed.
+### Download Link vs Terminal Install
+
+For this project, terminal install is better for active development and quick testing.
+
+- Use terminal install when iterating locally (`scripts/install-local.*`)
+- Use release download links once you publish artifacts from `dist/` to your release page
 
 ## Keybindings
 
 ### Global
+
 | Key | Action |
 |-----|--------|
-| `F1` | Library view |
-| `F2` | Playlists view |
-| `F4` | Open MP3 browser / import |
-| `Space` | Play / Pause |
-| `n` | Next track |
-| `p` | Previous track |
-| `s` | Toggle shuffle |
+| `F1` / `1` | Library view |
+| `F2` / `2` | Playlists view |
+| `F4` / `4` | Import browser |
+| `v` | Toggle cover visual mode |
+| `i` | Toggle visual render (`ASCII` / `IMAGE`) in visual mode |
+| `Space` | Play/Pause |
+| `n` / `p` | Next/Previous track |
+| `s` | Shuffle on/off |
+| `+` / `-` | Volume up/down |
+| `c` | Cycle UI palette |
+| `?` | Show/hide controls panel |
 | `Ctrl+C` | Quit |
 
-### Library view
+### Library View
+
 | Key | Action |
 |-----|--------|
-| `j` / `↓` | Move selection down |
-| `k` / `↑` | Move selection up |
+| `j` / `k` or `↓` / `↑` | Move selection |
 | `Enter` | Play selected track |
-| `a` | Add selected track to active playlist |
-| `d` / `Del` | Remove track from library |
+| `a` | Add selected track to playlist |
+| `d` / `Delete` | Remove selected track from library |
+| `Ctrl+F` | Start search |
+| `Esc` | Clear search |
 
-### Playlists view
+### Playlists View
+
 | Key | Action |
 |-----|--------|
-| `j` / `↓` | Move playlist selection |
-| `Enter` | Open playlist |
+| `j` / `k` | Move playlist selection |
+| `Tab` / `l` / `h` | Switch focus between playlists and tracks |
+| `Enter` | Open playlist / play focused track |
 | `n` | New playlist |
-| `r` | Remove highlighted track from playlist |
+| `r` | Remove selected track from active playlist |
 | `D` | Delete active playlist |
-| `Tab` / `l` | Focus playlist tracks panel |
+| `Ctrl+F` | Search playlist tracks |
 
-### Browser (import)
+### Import Browser
+
 | Key | Action |
 |-----|--------|
-| `j` / `↓` | Move down |
-| `k` / `↑` | Move up |
-| `Enter` | Enter directory / import MP3 |
-| `Backspace` | Go up one directory |
-| `Esc` | Cancel |
+| `j` / `k` or `↓` / `↑` | Move cursor |
+| `Enter` | Open folder or import file |
+| `Backspace` | Go up directory |
+| `Space` | Single-select file |
+| `Ctrl+Space` | Toggle marked file |
+| `Shift+Up/Down` | Range-select files |
+| `Esc` | Exit import browser |
 
-## Colour palette
+## Backends
 
-| Role | Hex | Usage |
-|------|-----|-------|
-| Primary | `#C47EFF` | Amethyst violet – selected items, chips |
-| Secondary | `#F3BE5A` | Amber gold – focus ring, playlist highlights |
-| Surface | `#100818` | Deep violet-black background |
-| Text | `#EDE3F6` | Soft lavender-white foreground |
-| Muted | `#7A5A99` | Dim violet – meta / durations |
+Audio backend is auto-selected from available executables.
 
-## Database location
+| Backend | Used For |
+|---------|----------|
+| `mpv` | Playback (preferred if present) |
+| `ffplay` | Playback fallback |
+| `mpg123` | Playback fallback |
+| `cvlc` / `vlc` | Playback fallback |
 
-| OS | Path |
-|----|------|
-| Linux / macOS | `~/.config/VibeVault/library.db` (XDG via `ApplicationData`) |
-| Windows | `%APPDATA%\VibeVault\library.db` |
+## Files
+
+Configuration and data are stored in the VibeVault app-data directory.
+
+| System | Base Path |
+|--------|-----------|
+| Linux | `~/.config/VibeVault/` |
+| macOS | `~/Library/Application Support/VibeVault/` |
+| Windows | `%APPDATA%\\VibeVault\\` |
+
+| File | Description |
+|------|-------------|
+| `library.db` | SQLite library + playlists |
+| `ui-settings.json` | Theme index, controls-panel visibility, visual render mode |
+
+## License
+
+No license file is currently included in this repository.
