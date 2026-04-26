@@ -41,14 +41,13 @@ VibeVault currently imports and indexes MP3 files only.
 #### Linux / macOS
 
 ```bash
-chmod +x scripts/install-local.sh
-./scripts/install-local.sh
+curl -fsSL https://raw.githubusercontent.com/raula09/VibeVault/main/install.sh | sh
 ```
 
 #### Windows (PowerShell)
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\install-local.ps1
+iwr -useb https://raw.githubusercontent.com/raula09/VibeVault/main/install.ps1 | iex
 ```
 
 ### Build Release Artifacts (All Platforms)
