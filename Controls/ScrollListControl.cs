@@ -74,15 +74,13 @@ internal sealed class ScrollListControl : Control
             var label = $"{prefix} {item.Label}";
             var maxLabel = content.Width - (item.RightMeta?.Length ?? 0) - 2;
             var labelWidth = Math.Max(0, maxLabel);
-            if (idx == SelectedIndex && TrySplitEmojiPrefix(label, out var emojiPrefix, out var remainder))
+            if (idx == SelectedIndex && FindBrowserIconIndex(label) >= 0)
             {
-                // Keep icon cells unstyled on selected rows; some terminals hide emoji under ANSI-styled backgrounds.
-                var emojiWidth = Math.Min(labelWidth, emojiPrefix.Length);
-                if (emojiWidth > 0)
-                    canvas.WriteText(content.X, content.Y + row, emojiPrefix, emojiWidth);
-                var restWidth = Math.Max(0, labelWidth - emojiWidth);
-                if (restWidth > 0)
-                    canvas.WriteText(content.X + emojiWidth, content.Y + row, Styled(style, remainder), restWidth);
+                canvas.WriteText(
+                    content.X,
+                    content.Y + row,
+                    $"{Styled(style, prefix)} {item.Label}",
+                    labelWidth);
             }
             else
             {
@@ -101,30 +99,20 @@ internal sealed class ScrollListControl : Control
     private static string Styled(TesseraStyle s, string t) =>
         s.IsEmpty || string.IsNullOrEmpty(t) ? t : s.Render(t);
 
-    private static bool TrySplitEmojiPrefix(string label, out string emojiPrefix, out string remainder)
+    private static int FindBrowserIconIndex(string text)
     {
-        emojiPrefix = string.Empty;
-        remainder = label;
-        if (string.IsNullOrEmpty(label)) return false;
+        var folder = text.IndexOf("📁", StringComparison.Ordinal);
+        var music = text.IndexOf("🎵", StringComparison.Ordinal);
+        var file = text.IndexOf("📄", StringComparison.Ordinal);
+        var up = text.IndexOf("⬆", StringComparison.Ordinal);
 
-        var firstSpace = label.IndexOf(' ');
-        if (firstSpace < 0 || firstSpace + 1 >= label.Length) return false;
-        var secondSpace = label.IndexOf(' ', firstSpace + 1);
-        if (secondSpace < 0) return false;
-
-        var iconToken = label[(firstSpace + 1)..secondSpace];
-        if (!ContainsBrowserIcon(iconToken)) return false;
-
-        emojiPrefix = label[..secondSpace];
-        remainder = label[secondSpace..];
-        return true;
+        var idx = -1;
+        if (folder >= 0) idx = folder;
+        if (music >= 0 && (idx < 0 || music < idx)) idx = music;
+        if (file >= 0 && (idx < 0 || file < idx)) idx = file;
+        if (up >= 0 && (idx < 0 || up < idx)) idx = up;
+        return idx;
     }
-
-    private static bool ContainsBrowserIcon(string token) =>
-        token.Contains("📁", StringComparison.Ordinal) ||
-        token.Contains("🎵", StringComparison.Ordinal) ||
-        token.Contains("📄", StringComparison.Ordinal) ||
-        token.Contains("⬆", StringComparison.Ordinal);
 
     private static void ClearContent(Canvas canvas, Rect content)
     {

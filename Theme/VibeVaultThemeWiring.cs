@@ -58,7 +58,7 @@ internal sealed partial class VibeVaultApp
         StyleList(_playlistTracks, p);
 
         StyleList(_browserList, p);
-        _browserList.SelectedItemStyle = VibeVaultTheme.Background(p.SelectionBackgroundColor);
+        _browserList.SelectedItemStyle = VibeVaultTheme.Foreground(p.AccentSecondaryColor).WithBold();
         StyleList(_addToPlaylistList, p);
         _addToPlaylistList.SelectedItemStyle = selection;
 

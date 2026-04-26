@@ -448,6 +448,12 @@ internal sealed partial class VibeVaultApp : TesseraApp
 
         if (!_state.IsSearchActive) return false;
 
+        if (key.Is(Key.Tab) || key.IsCharacter('c'))
+        {
+            _state.DeactivateSearch();
+            return false;
+        }
+
         if (key.Is(Key.Enter))
         {
             _state.DeactivateSearch();
@@ -460,7 +466,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
             return true;
         }
 
-        if (key.Is(Key.Up) || key.Is(Key.Down) || key.Is(Key.Left) || key.Is(Key.Right) || key.Is(Key.Tab))
+        if (key.Is(Key.Up) || key.Is(Key.Down) || key.Is(Key.Left) || key.Is(Key.Right))
             return true;
 
         if (TryGetTypedChar(key, out var ch))
@@ -783,10 +789,10 @@ internal sealed partial class VibeVaultApp : TesseraApp
 
     private static string FormatBrowserEntry(string entry, bool ascii)
     {
-        var up = ascii ? "^" : "⬆\uFE0E";
-        var folder = ascii ? "[DIR]" : "📁\uFE0E";
-        var music = ascii ? "[MP3]" : "🎵\uFE0E";
-        var file = ascii ? "[FILE]" : "📄\uFE0E";
+        var up = "^";
+        var folder = "[DIR]";
+        var music = "[MP3]";
+        var file = "[FILE]";
 
         if (entry == "../") return $"{up} ../";
         if (entry.EndsWith("/", StringComparison.Ordinal)) return $"{folder} {entry}";
