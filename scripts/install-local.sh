@@ -41,4 +41,22 @@ cp "${PUBLISH_DIR}/VibeVault" "${INSTALL_DIR}/vibevault"
 chmod +x "${INSTALL_DIR}/vibevault"
 
 echo "Installed: ${INSTALL_DIR}/vibevault"
-echo "Run with: vibevault"
+if command -v vibevault >/dev/null 2>&1; then
+  echo "Run with: vibevault"
+  exit 0
+fi
+
+echo "Command not currently on PATH in this shell."
+echo "Run now with: ${INSTALL_DIR}/vibevault"
+
+if [[ ":$PATH:" != *":${INSTALL_DIR}:"* ]]; then
+  EXPORT_LINE='export PATH="$HOME/.local/bin:$PATH"'
+  for RC_FILE in "${HOME}/.profile" "${HOME}/.bashrc" "${HOME}/.zprofile"; do
+    if [[ -f "${RC_FILE}" ]] && ! grep -Fq "${EXPORT_LINE}" "${RC_FILE}"; then
+      printf '\n%s\n' "${EXPORT_LINE}" >> "${RC_FILE}"
+      echo "Updated PATH in ${RC_FILE}"
+    fi
+  done
+fi
+
+echo "Open a new terminal (or run: export PATH=\"\$HOME/.local/bin:\$PATH\")"
