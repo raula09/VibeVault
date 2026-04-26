@@ -76,7 +76,7 @@ internal sealed class CommandBoardControl : Control
     {
         if (width <= 0) return string.Empty;
         if (text.Length == width) return text;
-        if (text.Length > width) return text[..Math.Max(0, width - 1)] + "…";
+        if (text.Length > width) return text[..Math.Max(0, width - 1)] + ".";
         return text.PadRight(width);
     }
 

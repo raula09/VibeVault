@@ -30,6 +30,7 @@ internal sealed class AlbumArtVisualizerControl : Control
     public VisualRenderMode RenderMode { get; set; } = VisualRenderMode.Ascii;
     public string EmptyMessage { get; set; } = "No embedded cover art in this MP3";
     public string FocusMarker { get; set; } = "✦";
+    public bool UseAsciiGlyphs { get; set; }
 
     public TesseraStyle TitleStyle { get; set; } = TesseraStyle.Empty;
     public TesseraStyle FocusedTitleStyle { get; set; } = TesseraStyle.Empty;
@@ -167,7 +168,11 @@ internal sealed class AlbumArtVisualizerControl : Control
             Fit(ArtistAlbumLine, width),
             Fit(TimingLine, width),
             Fit(MetaLine, width),
-            Fit($"i switch render ({RenderMode}) · v exit · space play/pause · n/p next-prev", width)
+            Fit(
+                UseAsciiGlyphs
+                    ? $"i switch render ({RenderMode}) | v exit | space play/pause | n/p next-prev"
+                    : $"i switch render ({RenderMode}) · v exit · space play/pause · n/p next-prev",
+                width)
         };
 
         for (var i = 0; i < height && i < rows.Length; i++)
@@ -182,7 +187,7 @@ internal sealed class AlbumArtVisualizerControl : Control
         if (width <= 0) return string.Empty;
         if (string.IsNullOrEmpty(text)) return string.Empty.PadRight(width);
         if (text.Length == width) return text;
-        if (text.Length > width) return width == 1 ? "…" : text[..(width - 1)] + "…";
+        if (text.Length > width) return width == 1 ? "." : text[..(width - 1)] + ".";
         return text.PadRight(width);
     }
 

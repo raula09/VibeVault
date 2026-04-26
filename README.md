@@ -53,6 +53,13 @@ curl -fsSL https://raw.githubusercontent.com/raula09/VibeVault/main/install.sh |
 iwr -useb https://raw.githubusercontent.com/raula09/VibeVault/main/install.ps1 | iex
 ```
 
+### Windows Terminal Rendering
+
+VibeVault now auto-falls back to ASCII UI glyphs on legacy Windows console hosts when UTF-8 is not detected.
+
+- Force ASCII mode: `setx VIBEVAULT_ASCII 1`
+- Force Unicode mode: `setx VIBEVAULT_UNICODE 1`
+
 ### Build Release Artifacts (All Platforms)
 
 ```bash

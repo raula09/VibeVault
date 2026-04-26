@@ -1,5 +1,9 @@
 using Tessera;
+using System.Text;
 using VibeVault;
+
+Console.InputEncoding = new UTF8Encoding(false);
+Console.OutputEncoding = new UTF8Encoding(false);
 
 var app = TesseraApplication.CreateBuilder()
     .UseApp<VibeVaultApp>()

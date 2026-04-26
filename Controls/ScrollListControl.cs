@@ -18,6 +18,9 @@ internal sealed class ScrollListControl : Control
     public int           CurrentIndex     { get; set; } = -1;
     public string        FocusMarker      { get; set; } = "✦";
     public string        EmptyMessage     { get; set; } = "— empty —";
+    public string        CurrentPrefix    { get; set; } = "●";
+    public string        SelectedPrefix   { get; set; } = "◆";
+    public string        ItemPrefix       { get; set; } = "·";
 
     public TesseraStyle TitleStyle          { get; set; } = TesseraStyle.Empty;
     public TesseraStyle FocusedTitleStyle   { get; set; } = TesseraStyle.Empty;
@@ -62,7 +65,7 @@ internal sealed class ScrollListControl : Control
             var idx  = start + row;
             var item = _items[idx];
 
-            var prefix = idx == CurrentIndex ? "●" : idx == SelectedIndex ? "◆" : "·";
+            var prefix = idx == CurrentIndex ? CurrentPrefix : idx == SelectedIndex ? SelectedPrefix : ItemPrefix;
 
             var style = idx == SelectedIndex  ? SelectedItemStyle
                       : idx == CurrentIndex   ? CurrentItemStyle

@@ -16,6 +16,7 @@ internal sealed class AudioMeterControl : Control
     public string FocusMarker { get; set; } = "✦";
     public string Levels { get; set; } = string.Empty;
     public double OverallLevel { get; set; }
+    public bool UseAsciiGlyphs { get; set; }
 
     public TesseraStyle TitleStyle { get; set; } = TesseraStyle.Empty;
     public TesseraStyle FocusedTitleStyle { get; set; } = TesseraStyle.Empty;
@@ -49,7 +50,11 @@ internal sealed class AudioMeterControl : Control
         var usedWidth = (bars * 2) - 1;
         var startX = content.X + Math.Max(0, (content.Width - usedWidth) / 2);
 
-        canvas.WriteText(content.X, baselineY, Styled(BottomBarStyle.IsEmpty ? TopBarStyle : BottomBarStyle, new string('─', content.Width)), content.Width);
+        canvas.WriteText(
+            content.X,
+            baselineY,
+            Styled(BottomBarStyle.IsEmpty ? TopBarStyle : BottomBarStyle, new string(UseAsciiGlyphs ? '-' : '─', content.Width)),
+            content.Width);
 
         for (var i = 0; i < bars; i++)
         {
@@ -65,7 +70,7 @@ internal sealed class AudioMeterControl : Control
             {
                 var y = baselineY - 1 - h;
                 if (y < content.Y) break;
-                canvas.WriteText(x, y, Styled(TopBarStyle, "█"), 1);
+                canvas.WriteText(x, y, Styled(TopBarStyle, UseAsciiGlyphs ? "#" : "█"), 1);
             }
         }
     }

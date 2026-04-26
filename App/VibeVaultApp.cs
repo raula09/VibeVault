@@ -44,6 +44,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
     private readonly IAudioPlayer   _audio;
     private readonly VibeVaultState _state;
     private readonly string _settingsPath;
+    private readonly TerminalGlyphProfile _glyphProfile = TerminalGlyphProfile.Detect();
     private bool _mouseSeekActive;
     private bool _showCommandDeck = true;
     private int _uiPaletteIndex;
@@ -204,6 +205,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
         _audio = new ExternalAudioPlayer();
         _state = new VibeVaultState(_db, _audio);
 
+        ApplyGlyphProfile();
         LoadUiPreferences();
         ApplyTheme();
         _libraryList.RequestFocus();
@@ -474,11 +476,11 @@ internal sealed partial class VibeVaultApp : TesseraApp
     {
         var track = _state.NowPlaying;
 
-        _nowPlaying.TrackTitle    = track is null ? "— nothing playing —" : track.Title.ToUpperInvariant();
+        _nowPlaying.TrackTitle    = track is null ? N("— nothing playing —") : track.Title.ToUpperInvariant();
         _nowPlaying.ArtistLine    = track?.Artist ?? string.Empty;
         _nowPlaying.AlbumLine     = track?.Album  ?? string.Empty;
-        _nowPlaying.StatusChip    = _state.IsPlaying ? "▶ playing" : "▌▌paused";
-        _nowPlaying.ShuffleChip   = _state.ShuffleOn ? "⇌ shuffle" : "→ linear";
+        _nowPlaying.StatusChip    = N(_state.IsPlaying ? "▶ playing" : "▌▌paused");
+        _nowPlaying.ShuffleChip   = N(_state.ShuffleOn ? "⇌ shuffle" : "→ linear");
         _nowPlaying.PlaylistChip  = _state.ActivePlaylist?.Name ?? "library";
         _nowPlaying.ProgressLine  = _state.ProgressText;
         _nowPlaying.RemainingLine = _state.RemainingText;
@@ -492,21 +494,21 @@ internal sealed partial class VibeVaultApp : TesseraApp
         _audioMeter.Levels = _state.VisualizerLine;
         _audioMeter.OverallLevel = _state.CurrentLoudnessLevel;
         _albumArtVisualizer.CoverArt = ResolveAlbumArt(track);
-        _albumArtVisualizer.TrackTitle = track?.Title ?? "— no track playing —";
+        _albumArtVisualizer.TrackTitle = track?.Title ?? N("— no track playing —");
         _albumArtVisualizer.ArtistAlbumLine = track is null
-            ? "—"
-            : $"{track.Artist} · {track.Album} · {track.Year}";
+            ? N("—")
+            : $"{track.Artist}{Sep}{track.Album}{Sep}{track.Year}";
         _albumArtVisualizer.TimingLine =
             $"{_state.ProgressText}  {(_state.DurationSeconds > 0 ? $"{(int)Math.Round(_state.Progress * 100)}%" : "0%")}";
         _albumArtVisualizer.MetaLine =
-            $"{(_state.IsPlaying ? "LIVE" : "PAUSED")} · vol {_state.VolumePercent}% · {_state.AudioBackend}";
+            $"{(_state.IsPlaying ? "LIVE" : "PAUSED")}{Sep}vol {_state.VolumePercent}%{Sep}{_state.AudioBackend}";
         _albumArtVisualizer.Loudness = _state.CurrentLoudnessLevel;
         _albumArtVisualizer.AnimationFrame = _visualFrameCounter;
         _albumArtVisualizer.RenderMode = _visualRenderMode;
      
         var visibleLibrary = _state.BuildVisibleLibrary();
-        _libraryList.SetItems(visibleLibrary.Select(static t =>
-            new ScrollListControl.ListItem($"{t.Artist}  –  {t.Title}", t.DisplayDuration)).ToArray());
+        _libraryList.SetItems(visibleLibrary.Select(t =>
+            new ScrollListControl.ListItem($"{t.Artist}  {N("–")}  {t.Title}", t.DisplayDuration)).ToArray());
         _libraryList.SelectedIndex = _state.BuildVisibleLibrarySelectedIndex();
         _libraryList.CurrentIndex  = _state.BuildVisibleLibraryCurrentIndex();
 
@@ -517,8 +519,8 @@ internal sealed partial class VibeVaultApp : TesseraApp
             .FindIndex(p => p.Id == _state.ActivePlaylist?.Id);
 
         var visiblePlaylistTracks = _state.BuildVisiblePlaylistTracks();
-        _playlistTracks.SetItems(visiblePlaylistTracks.Select(static t =>
-            new ScrollListControl.ListItem($"{t.Artist}  –  {t.Title}", t.DisplayDuration)).ToArray());
+        _playlistTracks.SetItems(visiblePlaylistTracks.Select(t =>
+            new ScrollListControl.ListItem($"{t.Artist}  {N("–")}  {t.Title}", t.DisplayDuration)).ToArray());
         _playlistTracks.SelectedIndex = _state.BuildVisiblePlaylistSelectedIndex();
         _playlistTracks.CurrentIndex  = _state.BuildVisiblePlaylistCurrentIndex();
 
@@ -526,31 +528,31 @@ internal sealed partial class VibeVaultApp : TesseraApp
         {
             var selectable = _state.IsBrowserEntrySelectableForImport(i);
             var mark = selectable ? (_state.IsBrowserEntryMarked(i) ? "[x]" : "[ ]") : "   ";
-            return new ScrollListControl.ListItem($"{mark} {FormatBrowserEntry(entry)}");
+            return new ScrollListControl.ListItem($"{mark} {FormatBrowserEntry(entry, _glyphProfile.UseAscii)}");
         }).ToArray());
         _browserList.SelectedIndex = _state.BrowserSelectedIndex;
-        _browserList.Title         = $"Import · {_state.BrowserPath} · selected {_state.BrowserMarkedCount}";
+        _browserList.Title         = $"Import{Sep}{_state.BrowserPath}{Sep}selected {_state.BrowserMarkedCount}";
 
         _playerStats.Text  = FormatStatBlock(_state.BuildNowPlayingStats());
         _libraryStats.Text = FormatStatBlock(_state.BuildLibraryStats());
-        _sessionCard.Text =
+        _sessionCard.Text = N(
             $"Pulse   {_state.PulseGlyph}\n" +
             $"Backend {_state.AudioBackend}\n" +
             $"Uptime  {(int)_state.Uptime.TotalHours:00}:{_state.Uptime.Minutes:00}:{_state.Uptime.Seconds:00}\n" +
-            $"View    {_state.View}";
-        _trackFactsCard.Text =
-            $"Track    {track?.Title ?? "—"}\n" +
-            $"Artist   {track?.Artist ?? "—"}\n" +
-            $"Album    {track?.Album ?? "—"}\n" +
-            $"State    {(_state.IsPlaying ? "▶ playing" : "▌▌paused")}  {(_state.ShuffleOn ? "⇌ shuffle" : "→ linear")}\n" +
+            $"View    {_state.View}");
+        _trackFactsCard.Text = N(
+            $"Track    {track?.Title ?? N("—")}\n" +
+            $"Artist   {track?.Artist ?? N("—")}\n" +
+            $"Album    {track?.Album ?? N("—")}\n" +
+            $"State    {N(_state.IsPlaying ? "▶ playing" : "▌▌paused")}  {N(_state.ShuffleOn ? "⇌ shuffle" : "→ linear")}\n" +
             $"Queue    {_state.ActivePlaylist?.Name ?? "library"}\n" +
-            $"Time     {_state.ProgressText}  {_state.RemainingText}";
-        _visualizerCard.Text = "\n" + _state.VisualizerLine;
+            $"Time     {_state.ProgressText}  {_state.RemainingText}");
+        _visualizerCard.Text = "\n" + N(_state.VisualizerLine);
         if (_showCommandDeck)
             _commandDeckCard.SetRows(BuildCommandRows());
         _activityFeed.Text = _state.RecentEvents.Count == 0
-            ? "— no activity yet —"
-            : string.Join('\n', _state.RecentEvents.Select(static e => $"OUT  {e}"));
+            ? N("— no activity yet —")
+            : N(string.Join('\n', _state.RecentEvents.Select(static e => $"OUT  {e}")));
         var searchScope = _state.View == AppView.Playlists ? "playlist tracks" : "library tracks";
         var visibleMatches = _state.View == AppView.Playlists ? _state.VisiblePlaylistTrackCount : _state.VisibleLibraryCount;
         var matchWord = visibleMatches == 1 ? "match" : "matches";
@@ -559,8 +561,8 @@ internal sealed partial class VibeVaultApp : TesseraApp
             : _state.SearchQuery;
         var caret = _state.IsSearchActive ? "_" : string.Empty;
         _searchBar.Title = _state.IsSearchActive
-            ? "Search · Ctrl+F editing · Enter done · Esc clear"
-            : "Search · Ctrl+F edit · Esc clear";
+            ? $"Search{Sep}Ctrl+F editing{Sep}Enter done{Sep}Esc clear"
+            : $"Search{Sep}Ctrl+F edit{Sep}Esc clear";
         _searchBar.Text = $"/ {searchText}{caret}  [{visibleMatches} {matchWord} in {searchScope}]";
         _workspaceTabs.SetSegments(BuildWorkspaceSegments());
         _modeChips.SetSegments(BuildModeSegments(track));
@@ -571,6 +573,80 @@ internal sealed partial class VibeVaultApp : TesseraApp
             new ScrollListControl.ListItem(p.Name)).ToArray());
         _addToPlaylistList.SelectedIndex = _state.AddToPlaylistSelectedIndex;
 
+    }
+
+    private string N(string text) => _glyphProfile.Normalize(text);
+
+    private string Sep => _glyphProfile.UseAscii ? " | " : " · ";
+
+    private void ApplyGlyphProfile()
+    {
+        _albumArtVisualizer.Title = N(_albumArtVisualizer.Title);
+        _albumArtVisualizer.EmptyMessage = N(_albumArtVisualizer.EmptyMessage);
+        _libraryList.Title = N(_libraryList.Title);
+        _libraryList.EmptyMessage = N(_libraryList.EmptyMessage);
+        _playlistPanel.Title = N(_playlistPanel.Title);
+        _playlistPanel.EmptyMessage = N(_playlistPanel.EmptyMessage);
+        _playlistTracks.EmptyMessage = N(_playlistTracks.EmptyMessage);
+        _browserList.Title = N(_browserList.Title);
+        _addToPlaylistList.EmptyMessage = N(_addToPlaylistList.EmptyMessage);
+
+        if (!_glyphProfile.UseAscii) return;
+
+        var focus = _glyphProfile.FocusMarker;
+        var border = _glyphProfile.BorderStyle;
+
+        _nowPlaying.Border = border;
+
+        _seekBar.Border = border;
+        _seekBar.FocusMarker = focus;
+        _seekBar.UseAsciiGlyphs = true;
+
+        _audioMeter.Border = border;
+        _audioMeter.FocusMarker = focus;
+        _audioMeter.UseAsciiGlyphs = true;
+
+        _albumArtVisualizer.Border = border;
+        _albumArtVisualizer.FocusMarker = focus;
+        _albumArtVisualizer.UseAsciiGlyphs = true;
+
+        ConfigureList(_libraryList, border, focus, "*", ">", ".");
+        ConfigureList(_playlistPanel, border, focus, "*", ">", ".");
+        ConfigureList(_playlistTracks, border, focus, "*", ">", ".");
+        ConfigureList(_browserList, border, focus, "*", ">", ".");
+        ConfigureList(_addToPlaylistList, border, focus, "*", ">", ".");
+
+        _playerStats.Border = border;
+        _libraryStats.Border = border;
+        _sessionCard.Border = border;
+        _trackFactsCard.Border = border;
+        _visualizerCard.Border = border;
+        _commandDeckCard.Border = border;
+        _commandDeckCard.FocusMarker = focus;
+        _activityFeed.Border = border;
+        _searchBar.Border = border;
+
+        _workspaceTabs.Border = border;
+        _workspaceTabs.FocusMarker = focus;
+        _modeChips.Border = border;
+        _modeChips.FocusMarker = focus;
+
+        _dialogLabel.Border = border;
+    }
+
+    private static void ConfigureList(
+        ScrollListControl list,
+        BorderStyle border,
+        string focusMarker,
+        string currentPrefix,
+        string selectedPrefix,
+        string itemPrefix)
+    {
+        list.Border = border;
+        list.FocusMarker = focusMarker;
+        list.CurrentPrefix = currentPrefix;
+        list.SelectedPrefix = selectedPrefix;
+        list.ItemPrefix = itemPrefix;
     }
 
     private IReadOnlyList<SegmentBarControl.Segment> BuildWorkspaceSegments()
@@ -599,9 +675,9 @@ internal sealed partial class VibeVaultApp : TesseraApp
         [
             new SegmentBarControl.Segment(_state.IsPlaying ? "[Playback Live]" : "[Playback Idle]", _state.IsPlaying ? live : muted),
             new SegmentBarControl.Segment(_state.ShuffleOn ? "[Queue Shuffle]" : "[Queue Linear]", _state.ShuffleOn ? on : off),
-            new SegmentBarControl.Segment($"[Theme {CurrentUiPalette.Name} · c]", on),
-            new SegmentBarControl.Segment(_state.View == AppView.Visualizer ? "[Visual Mode On · v]" : "[Visual Mode Off · v]", off),
-            new SegmentBarControl.Segment(_visualRenderMode == VisualRenderMode.Ascii ? "[Render ASCII · i]" : "[Render IMAGE · i]", off),
+            new SegmentBarControl.Segment(N($"[Theme {CurrentUiPalette.Name}{Sep}c]"), on),
+            new SegmentBarControl.Segment(N(_state.View == AppView.Visualizer ? $"[Visual Mode On{Sep}v]" : $"[Visual Mode Off{Sep}v]"), off),
+            new SegmentBarControl.Segment(N(_visualRenderMode == VisualRenderMode.Ascii ? $"[Render ASCII{Sep}i]" : $"[Render IMAGE{Sep}i]"), off),
             new SegmentBarControl.Segment(_showCommandDeck ? "[? Hide Controls]" : "[? Show Controls]", off),
             new SegmentBarControl.Segment(_state.ActivePlaylist is null ? "[Scope Library]" : $"[Scope {_state.ActivePlaylist.Name}]", off),
             new SegmentBarControl.Segment($"[Backend {_state.AudioBackend}]", off),
@@ -613,40 +689,40 @@ internal sealed partial class VibeVaultApp : TesseraApp
     {
         var rows = new List<CommandBoardControl.CommandRow>
         {
-            new("Global", "Space play/pause · n/p next-prev · s shuffle · +/- volume · c cycle theme · ? controls"),
-            new("Views", "F1/F2/F4 switch · 1/2/4 quick switch · v cover visual")
+            new("Global", N("Space play/pause · n/p next-prev · s shuffle · +/- volume · c cycle theme · ? controls")),
+            new("Views", N("F1/F2/F4 switch · 1/2/4 quick switch · v cover visual"))
         };
 
         switch (_state.View)
         {
             case AppView.Library:
-                rows.Add(new("Library", "j/k move · Enter play · a add-to-list · d delete"));
-                rows.Add(new("Search", "Ctrl+F edit filter · Enter finish · Esc clear"));
+                rows.Add(new("Library", N("j/k move · Enter play · a add-to-list · d delete")));
+                rows.Add(new("Search", N("Ctrl+F edit filter · Enter finish · Esc clear")));
                 break;
 
             case AppView.Playlists:
-                rows.Add(new("Lists", "j/k move playlists · Enter open · n new · D delete"));
-                rows.Add(new("Tracks", "Tab/l toggle panes · h move left · j/k move · Enter play · r remove"));
+                rows.Add(new("Lists", N("j/k move playlists · Enter open · n new · D delete")));
+                rows.Add(new("Tracks", N("Tab/l toggle panes · h move left · j/k move · Enter play · r remove")));
                 rows.Add(new("Search", "Ctrl+F filters playlist tracks by title/artist/album"));
                 break;
 
             case AppView.Browser:
-                rows.Add(new("Import", "j/k move · Enter open/import · Backspace up-dir · Esc cancel"));
-                rows.Add(new("Select", "Space single-select · Ctrl+Space toggle · Shift+Up/Down range"));
+                rows.Add(new("Import", N("j/k move · Enter open/import · Backspace up-dir · Esc cancel")));
+                rows.Add(new("Select", N("Space single-select · Ctrl+Space toggle · Shift+Up/Down range")));
                 break;
 
             case AppView.Visualizer:
-                rows.Add(new("Visual", "i toggle render ascii/image · v or Esc exit"));
-                rows.Add(new("Visual", "Space play/pause · n/p switch tracks"));
+                rows.Add(new("Visual", N("i toggle render ascii/image · v or Esc exit")));
+                rows.Add(new("Visual", N("Space play/pause · n/p switch tracks")));
                 rows.Add(new("Visual", "uses embedded album art from MP3 APIC/attached picture"));
                 break;
 
             case AppView.NewPlaylist:
-                rows.Add(new("Dialog", "Type name · Backspace delete · Enter create · Esc cancel"));
+                rows.Add(new("Dialog", N("Type name · Backspace delete · Enter create · Esc cancel")));
                 break;
 
             case AppView.AddToPlaylist:
-                rows.Add(new("Dialog", "j/k choose playlist · Enter confirm · Esc cancel"));
+                rows.Add(new("Dialog", N("j/k choose playlist · Enter confirm · Esc cancel")));
                 break;
         }
 
@@ -705,12 +781,12 @@ internal sealed partial class VibeVaultApp : TesseraApp
         return null;
     }
 
-    private static string FormatBrowserEntry(string entry)
+    private static string FormatBrowserEntry(string entry, bool ascii)
     {
-        const string up = "⬆\uFE0E";
-        const string folder = "📁\uFE0E";
-        const string music = "🎵\uFE0E";
-        const string file = "📄\uFE0E";
+        var up = ascii ? "^" : "⬆\uFE0E";
+        var folder = ascii ? "[DIR]" : "📁\uFE0E";
+        var music = ascii ? "[MP3]" : "🎵\uFE0E";
+        var file = ascii ? "[FILE]" : "📄\uFE0E";
 
         if (entry == "../") return $"{up} ../";
         if (entry.EndsWith("/", StringComparison.Ordinal)) return $"{folder} {entry}";
@@ -729,10 +805,10 @@ internal sealed partial class VibeVaultApp : TesseraApp
         return extracted;
     }
 
-    private static string FormatStatBlock(IReadOnlyList<StatItem> stats) =>
+    private string FormatStatBlock(IReadOnlyList<StatItem> stats) =>
         stats.Count == 0
-            ? "—"
-            : string.Join('\n', stats.Select(static s => $"{s.Key,-11} {s.Value}"));
+            ? N("—")
+            : N(string.Join('\n', stats.Select(static s => $"{s.Key,-11} {s.Value}")));
 
     private UiPalette CurrentUiPalette => UiPalettes[_uiPaletteIndex];
 
