@@ -1,6 +1,6 @@
 # VibeVault
 
-Terminal music library player written in C#.
+Terminal music library player written in C# using Tessera UI framework.
 
 Listen to local MP3s in a fast keyboard-first TUI with playlists, search, timeline seeking, loudness meter, and album-art visual mode.
 
@@ -35,6 +35,8 @@ VibeVault currently imports and indexes MP3 files only.
 | Linux | `x64`, `arm64` |
 | macOS | `x64`, `arm64` |
 | Windows | `x64`, `arm64` |
+
+Check out Tessera: https://georgetsouvaltzis.github.io/tessera/
 
 ### Install (Terminal, Recommended)
 
