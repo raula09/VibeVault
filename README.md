@@ -2,7 +2,20 @@
 
 Terminal music library player written in C# using Tessera UI framework.
 
-Listen to local MP3s in a fast keyboard-first TUI with playlists, search, timeline seeking, loudness meter, and album-art visual mode.
+Listen to local MP3s in a fast keyboard-first TUI with playlists, search, timeline seeking, loudness meter, manual queue ordering, and a high-quality album-art visual mode.
+
+## What's New
+
+- Manual playback queue:
+  enqueue tracks with `q` and play them in chosen order with `n` (queue is consumed first).
+- Queue on startup:
+  manual queue is cleared when the app starts.
+- Multi-select in Library:
+  `Shift+Up/Down` range-select and `Ctrl+Space` toggle-select, then bulk add with `a` or bulk queue with `q`.
+- Visualizer quality upgrade:
+  improved ASCII/detail mapping, higher-quality sampling, and better visual layout balance.
+- UI consistency:
+  timeline/audio meter panel sizing is now consistent across Library and Playlists views.
 
 ## Supported Format
 
@@ -102,8 +115,8 @@ dotnet run
 | `v` | Toggle cover visual mode |
 | `i` | Toggle visual render (`ASCII` / `IMAGE`) in visual mode |
 | `Space` | Play/Pause |
-| `n` / `p` | Next/Previous track |
-| `q` | Add selected track(s) to playback queue |
+| `n` / `p` | Next/Previous track (`n` consumes manual queue first) |
+| `q` | Queue selected/focused track(s) in current view |
 | `s` | Shuffle on/off |
 | `+` / `-` | Volume up/down |
 | `c` | Cycle UI palette |
@@ -132,7 +145,7 @@ dotnet run
 | `Tab` / `l` / `h` | Switch focus between playlists and tracks |
 | `Enter` | Open playlist / play focused track |
 | `q` | Queue focused playlist track |
-| `n` | New playlist |
+| `n` | If queue has items: play next queued track; otherwise create new playlist |
 | `r` | Remove selected track from active playlist |
 | `D` | Delete active playlist |
 | `Ctrl+F` | Search playlist tracks |
