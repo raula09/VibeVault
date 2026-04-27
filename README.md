@@ -103,6 +103,8 @@ dotnet run
 | `i` | Toggle visual render (`ASCII` / `IMAGE`) in visual mode |
 | `Space` | Play/Pause |
 | `n` / `p` | Next/Previous track |
+| `q` | Add selected track(s) to playback queue |
+| `Shift+Q` | Clear playback queue |
 | `s` | Shuffle on/off |
 | `+` / `-` | Volume up/down |
 | `c` | Cycle UI palette |
@@ -117,6 +119,7 @@ dotnet run
 | `Shift+Up/Down` | Range-select tracks |
 | `Ctrl+Space` | Toggle focused track in selection |
 | `Enter` | Play selected track |
+| `q` | Queue selected track(s) in order |
 | `a` | Add selected track(s) to playlist |
 | `d` / `Delete` | Remove selected track from library |
 | `Ctrl+F` | Start search |
@@ -129,6 +132,7 @@ dotnet run
 | `j` / `k` | Move playlist selection |
 | `Tab` / `l` / `h` | Switch focus between playlists and tracks |
 | `Enter` | Open playlist / play focused track |
+| `q` | Queue focused playlist track |
 | `n` | New playlist |
 | `r` | Remove selected track from active playlist |
 | `D` | Delete active playlist |

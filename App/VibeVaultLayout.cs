@@ -63,7 +63,7 @@ internal sealed partial class VibeVaultApp
             if (_showCommandDeck)
                 col.Fixed(7, _commandDeckCard);
             col.Fixed(4, _seekBar);
-            col.Fixed(8, meter => meter.Center(center => center.Row(row => row.Fill(_audioMeter)), width: 140));
+            col.Fixed(8, meter => meter.Center(center => center.Row(row => row.Fill(_audioMeter)), width: 200));
         });
     }
 

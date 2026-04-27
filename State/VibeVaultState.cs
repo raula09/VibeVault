@@ -34,6 +34,8 @@ internal sealed class VibeVaultState : IDisposable
     private readonly List<double> _fallbackBandState = [];
     private readonly List<double> _fallbackBandPhase = [];
     private readonly List<double> _fallbackBandRate = [];
+    private readonly List<string> _manualQueueTrackIds = [];
+    private readonly List<string> _manualQueueHistoryIds = [];
 
     private int  _librarySelected;
     private readonly HashSet<int> _libraryMarked = [];
@@ -104,6 +106,7 @@ internal sealed class VibeVaultState : IDisposable
     public int BrowserSelectedIndex      => _browserSelected;
     public int BrowserMarkedCount => _browserMarked.Count;
     public int LibraryMarkedCount => _libraryMarked.Count;
+    public int PendingQueueCount => _manualQueueTrackIds.Count;
 
     public string BrowserPath => _browserPath;
     public string AddToPlaylistPrompt
@@ -182,6 +185,7 @@ internal sealed class VibeVaultState : IDisposable
     [
         new StatItem("MODE", IsPlaying ? "LIVE" : "PAUSED"),
         new StatItem("VOL", $"{_volumePercent}"),
+        new StatItem("QUEUED", $"{_manualQueueTrackIds.Count}"),
         new StatItem("POSITION", ProgressText),
         new StatItem("REMAINING", RemainingText),
         new StatItem("QUEUE", BuildQueueStat()),
@@ -384,6 +388,15 @@ internal sealed class VibeVaultState : IDisposable
 
     public void PlayNext()
     {
+        if (TryDequeueNextTrack(out var queuedTrack))
+        {
+            if (NowPlaying is not null)
+                PushQueueHistory(NowPlaying.Id);
+            _queueFromPlaylist = false;
+            PlayTrack(queuedTrack);
+            return;
+        }
+
         var list = ActivePlaylistTrackList();
         if (list.Count == 0) return;
         var idx = list.FindIndex(t => t.Id == NowPlaying?.Id);
@@ -397,6 +410,15 @@ internal sealed class VibeVaultState : IDisposable
 
     public void PlayPrevious()
     {
+        if (TryPopQueueHistory(out var previousTrack))
+        {
+            if (NowPlaying is not null)
+                _manualQueueTrackIds.Insert(0, NowPlaying.Id);
+            _queueFromPlaylist = false;
+            PlayTrack(previousTrack);
+            return;
+        }
+
         var list = ActivePlaylistTrackList();
         if (list.Count == 0) return;
         var idx  = list.FindIndex(t => t.Id == NowPlaying?.Id);
@@ -493,6 +515,30 @@ internal sealed class VibeVaultState : IDisposable
             : $"{_libraryMarked.Count} track(s) selected");
     }
 
+    public void EnqueueLibrarySelection()
+    {
+        if (_library.Count == 0)
+        {
+            SetStatus("library is empty");
+            return;
+        }
+
+        var indices = BuildLibrarySelectionForQueueIndices();
+        if (indices.Count == 0)
+        {
+            SetStatus("no tracks selected");
+            return;
+        }
+
+        foreach (var index in indices)
+            _manualQueueTrackIds.Add(_library[index].Id);
+
+        if (indices.Count == 1)
+            SetStatus($"queued  {_library[indices[0]].Title}");
+        else
+            SetStatus($"queued  {indices.Count} track(s)");
+    }
+
     public void MovePlaylistPanel(int delta)
     {
         _playlistPanelSelected = Math.Clamp(_playlistPanelSelected + delta, 0, Math.Max(0, _playlists.Count - 1));
@@ -510,6 +556,37 @@ internal sealed class VibeVaultState : IDisposable
         var at = Math.Max(0, visible.IndexOf(_playlistTrackSelected));
         at = Math.Clamp(at + delta, 0, visible.Count - 1);
         _playlistTrackSelected = visible[at];
+    }
+
+    public void EnqueuePlaylistTrackSelected()
+    {
+        if (_playlistTracks.Count == 0)
+        {
+            SetStatus("playlist is empty");
+            return;
+        }
+
+        var visible = BuildVisiblePlaylistTrackIndices();
+        if (visible.Count == 0)
+        {
+            SetStatus("no tracks selected");
+            return;
+        }
+
+        if (!visible.Contains(_playlistTrackSelected))
+            _playlistTrackSelected = visible[0];
+
+        var track = _playlistTracks[_playlistTrackSelected];
+        _manualQueueTrackIds.Add(track.Id);
+        SetStatus($"queued  {track.Title}");
+    }
+
+    public void ClearManualQueue()
+    {
+        var pending = _manualQueueTrackIds.Count;
+        _manualQueueTrackIds.Clear();
+        _manualQueueHistoryIds.Clear();
+        SetStatus(pending == 0 ? "queue already empty" : "queue cleared");
     }
 
     public void MoveBrowserSelection(int delta, bool extendSelection = false)
@@ -968,6 +1045,9 @@ internal sealed class VibeVaultState : IDisposable
     {
         _library   = _db.LoadAllTracks().ToList();
         _playlists = _db.LoadAllPlaylists().ToList();
+        var validIds = _library.Select(t => t.Id).ToHashSet(StringComparer.Ordinal);
+        _manualQueueTrackIds.RemoveAll(id => !validIds.Contains(id));
+        _manualQueueHistoryIds.RemoveAll(id => !validIds.Contains(id));
         _libraryMarked.Clear();
         _libraryRangeAnchor = -1;
         if (_activePlaylistId is not null)
@@ -1047,6 +1127,61 @@ internal sealed class VibeVaultState : IDisposable
             .OrderBy(i => i)
             .ToList();
         return selected.Count == 0 ? [Math.Clamp(_librarySelected, 0, _library.Count - 1)] : selected;
+    }
+
+    private List<int> BuildLibrarySelectionForQueueIndices()
+    {
+        if (_library.Count == 0) return [];
+
+        if (_libraryMarked.Count == 0)
+            return [Math.Clamp(_librarySelected, 0, _library.Count - 1)];
+
+        var visible = BuildVisibleLibraryIndices().ToHashSet();
+        var selected = _libraryMarked
+            .Where(i => i >= 0 && i < _library.Count)
+            .Where(i => visible.Contains(i))
+            .OrderBy(i => i)
+            .ToList();
+        return selected.Count == 0 ? [Math.Clamp(_librarySelected, 0, _library.Count - 1)] : selected;
+    }
+
+    private bool TryDequeueNextTrack(out LibraryTrack track)
+    {
+        while (_manualQueueTrackIds.Count > 0)
+        {
+            var id = _manualQueueTrackIds[0];
+            _manualQueueTrackIds.RemoveAt(0);
+            var next = _library.FirstOrDefault(t => t.Id == id);
+            if (next is null) continue;
+            track = next;
+            return true;
+        }
+
+        track = default!;
+        return false;
+    }
+
+    private bool TryPopQueueHistory(out LibraryTrack track)
+    {
+        while (_manualQueueHistoryIds.Count > 0)
+        {
+            var last = _manualQueueHistoryIds[^1];
+            _manualQueueHistoryIds.RemoveAt(_manualQueueHistoryIds.Count - 1);
+            var previous = _library.FirstOrDefault(t => t.Id == last);
+            if (previous is null) continue;
+            track = previous;
+            return true;
+        }
+
+        track = default!;
+        return false;
+    }
+
+    private void PushQueueHistory(string trackId)
+    {
+        _manualQueueHistoryIds.Add(trackId);
+        if (_manualQueueHistoryIds.Count > 100)
+            _manualQueueHistoryIds.RemoveAt(0);
     }
 
     private string BuildVisualizerLine()

@@ -355,6 +355,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
         if (key.IsCharacter('n') && _state.View != AppView.Playlists) { _state.PlayNext(); return null; }
         if (key.IsCharacter('p')) { _state.PlayPrevious();    return null; }
         if (key.IsCharacter('s')) { _state.ToggleShuffle();   return null; }
+        if (key.IsCharacter('Q')) { _state.ClearManualQueue(); return null; }
         if (key.Is(Key.Left))  { _state.SeekBy(-5); return null; }
         if (key.Is(Key.Right)) { _state.SeekBy(5);  return null; }
         if (_state.View == AppView.Library)
@@ -370,6 +371,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
             if (key.Is(Key.Up)   || key.IsCharacter('k')) { _state.MoveLibrarySelection(-1); return null; }
             if (key.Is(Key.Down) || key.IsCharacter('j')) { _state.MoveLibrarySelection(1);  return null; }
             if (key.Is(Key.Enter)) { _state.CueLibrarySelected(); return null; }
+            if (key.IsCharacter('q')) { _state.EnqueueLibrarySelection(); return null; }
             if (key.IsCharacter('a')) { _state.StartAddToPlaylistDialog(); return null; }
             if (key.Is(Key.Delete) || key.IsCharacter('d')) { _state.DeleteLibrarySelected(); return null; }
         }
@@ -388,6 +390,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
                 if (key.Is(Key.Up)   || key.IsCharacter('k')) { _state.MovePlaylistTrackSelection(-1); return null; }
                 if (key.Is(Key.Down) || key.IsCharacter('j')) { _state.MovePlaylistTrackSelection(1);  return null; }
                 if (key.Is(Key.Enter)) { _state.CuePlaylistTrack(); return null; }
+                if (key.IsCharacter('q')) { _state.EnqueuePlaylistTrackSelected(); return null; }
                 if (key.IsCharacter('r')) { _state.RemovePlaylistTrackSelected(); return null; }
                 if (key.IsCharacter('n')) { _state.PlayNext(); return null; }
                 return null;
@@ -587,7 +590,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
             $"Artist   {track?.Artist ?? N("—")}\n" +
             $"Album    {track?.Album ?? N("—")}\n" +
             $"State    {N(_state.IsPlaying ? "▶ playing" : "▌▌paused")}  {N(_state.ShuffleOn ? "⇌ shuffle" : "→ linear")}\n" +
-            $"Queue    {_state.ActivePlaylist?.Name ?? "library"}\n" +
+            $"Queue    {_state.ActivePlaylist?.Name ?? "library"}  (next {_state.PendingQueueCount})\n" +
             $"Time     {_state.ProgressText}  {_state.RemainingText}");
         _visualizerCard.Text = "\n" + N(_state.VisualizerLine);
         if (_showCommandDeck)
@@ -759,21 +762,21 @@ internal sealed partial class VibeVaultApp : TesseraApp
     {
         var rows = new List<CommandBoardControl.CommandRow>
         {
-            new("Global", N("Space play/pause · n/p next-prev · s shuffle · +/- volume · c cycle theme · ? controls · ` lane")),
+            new("Global", N("Space play/pause · n/p next-prev · s shuffle · q queue add · Shift+Q clear queue")),
             new("Views", N("F1/F2/F4 switch · 1/2/4 quick switch · v cover visual"))
         };
 
         switch (_state.View)
         {
             case AppView.Library:
-                rows.Add(new("Library", N("j/k move · Shift+Up/Down range · Ctrl+Space toggle · a add-to-list")));
+                rows.Add(new("Library", N("j/k move · Shift+Up/Down range · Ctrl+Space toggle · q queue add")));
                 rows.Add(new("Library", N("Enter play · d delete · Ctrl+F search · Esc clear")));
                 rows.Add(new("Search", N("Ctrl+F edit filter · Enter finish · Esc clear")));
                 break;
 
             case AppView.Playlists:
                 rows.Add(new("Lists", N("j/k move playlists · Enter open · n new · D delete")));
-                rows.Add(new("Tracks", N("Tab/l toggle panes · h move left · j/k move · Enter play · r remove")));
+                rows.Add(new("Tracks", N("Tab/l toggle panes · h move left · j/k move · Enter play · q queue · r remove")));
                 rows.Add(new("Search", "Ctrl+F filters playlist tracks by title/artist/album"));
                 break;
 
