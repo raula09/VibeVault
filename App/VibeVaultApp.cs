@@ -202,7 +202,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
         _settingsPath = Path.Combine(appDataDir, "ui-settings.json");
 
         _db    = new VibeVaultDb(dbPath);
-        _audio = new ExternalAudioPlayer();
+        _audio = AudioPlayerFactory.Create();
         _state = new VibeVaultState(_db, _audio);
 
         ApplyGlyphProfile();
