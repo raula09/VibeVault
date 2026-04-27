@@ -104,7 +104,6 @@ dotnet run
 | `Space` | Play/Pause |
 | `n` / `p` | Next/Previous track |
 | `q` | Add selected track(s) to playback queue |
-| `Shift+Q` | Clear playback queue |
 | `s` | Shuffle on/off |
 | `+` / `-` | Volume up/down |
 | `c` | Cycle UI palette |

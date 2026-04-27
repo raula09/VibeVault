@@ -350,12 +350,12 @@ internal sealed partial class VibeVaultApp : TesseraApp
             _state.NotifyStatus(_showActivityFeed ? "execution lane shown" : "execution lane hidden");
             return null;
         }
+        if (key.IsCharacter('n') && _state.PendingQueueCount > 0) { _state.PlayNext(); return null; }
         if (key.IsCharacter('+') || key.IsCharacter('=')) { _state.AdjustVolume(+5); return null; }
         if (key.IsCharacter('-') || key.IsCharacter('_')) { _state.AdjustVolume(-5); return null; }
         if (key.IsCharacter('n') && _state.View != AppView.Playlists) { _state.PlayNext(); return null; }
         if (key.IsCharacter('p')) { _state.PlayPrevious();    return null; }
         if (key.IsCharacter('s')) { _state.ToggleShuffle();   return null; }
-        if (key.IsCharacter('Q')) { _state.ClearManualQueue(); return null; }
         if (key.Is(Key.Left))  { _state.SeekBy(-5); return null; }
         if (key.Is(Key.Right)) { _state.SeekBy(5);  return null; }
         if (_state.View == AppView.Library)
@@ -371,7 +371,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
             if (key.Is(Key.Up)   || key.IsCharacter('k')) { _state.MoveLibrarySelection(-1); return null; }
             if (key.Is(Key.Down) || key.IsCharacter('j')) { _state.MoveLibrarySelection(1);  return null; }
             if (key.Is(Key.Enter)) { _state.CueLibrarySelected(); return null; }
-            if (key.IsCharacter('q')) { _state.EnqueueLibrarySelection(); return null; }
+            if (key.IsCharacter('q') || key.IsCharacter('Q')) { _state.EnqueueLibrarySelection(); return null; }
             if (key.IsCharacter('a')) { _state.StartAddToPlaylistDialog(); return null; }
             if (key.Is(Key.Delete) || key.IsCharacter('d')) { _state.DeleteLibrarySelected(); return null; }
         }
@@ -390,11 +390,13 @@ internal sealed partial class VibeVaultApp : TesseraApp
                 if (key.Is(Key.Up)   || key.IsCharacter('k')) { _state.MovePlaylistTrackSelection(-1); return null; }
                 if (key.Is(Key.Down) || key.IsCharacter('j')) { _state.MovePlaylistTrackSelection(1);  return null; }
                 if (key.Is(Key.Enter)) { _state.CuePlaylistTrack(); return null; }
-                if (key.IsCharacter('q')) { _state.EnqueuePlaylistTrackSelected(); return null; }
+                if (key.IsCharacter('q') || key.IsCharacter('Q')) { _state.EnqueuePlaylistTrackSelected(); return null; }
                 if (key.IsCharacter('r')) { _state.RemovePlaylistTrackSelected(); return null; }
                 if (key.IsCharacter('n')) { _state.PlayNext(); return null; }
                 return null;
             }
+
+            if (key.IsCharacter('q') || key.IsCharacter('Q')) { _state.EnqueuePlaylistTrackSelected(); return null; }
 
             if (key.Is(Key.Up)   || key.IsCharacter('k')) { _state.MovePlaylistPanel(-1);       return null; }
             if (key.Is(Key.Down) || key.IsCharacter('j')) { _state.MovePlaylistPanel(1);         return null; }
@@ -767,7 +769,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
     {
         var rows = new List<CommandBoardControl.CommandRow>
         {
-            new("Global", N("Space play/pause · n/p next-prev · s shuffle · q queue add · Shift+Q clear queue")),
+            new("Global", N("Space play/pause · n/p next-prev · s shuffle · q queue add")),
             new("Views", N("F1/F2/F4 switch · 1/2/4 quick switch · v cover visual"))
         };
 
