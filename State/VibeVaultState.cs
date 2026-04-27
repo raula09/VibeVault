@@ -66,6 +66,8 @@ internal sealed class VibeVaultState : IDisposable
             "imports");
         Directory.CreateDirectory(_importCacheDir);
         Reload();
+        _manualQueueTrackIds.Clear();
+        _manualQueueHistoryIds.Clear();
         if (!_audio.IsAvailable)
             SetStatus("no audio backend found (install ffplay/mpv/mpg123/vlc)");
         else

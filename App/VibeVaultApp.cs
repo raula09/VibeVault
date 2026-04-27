@@ -399,7 +399,12 @@ internal sealed partial class VibeVaultApp : TesseraApp
             if (key.Is(Key.Up)   || key.IsCharacter('k')) { _state.MovePlaylistPanel(-1);       return null; }
             if (key.Is(Key.Down) || key.IsCharacter('j')) { _state.MovePlaylistPanel(1);         return null; }
             if (key.Is(Key.Enter)) { _state.SelectPlaylist(); return null; }
-            if (key.IsCharacter('n')) { _state.StartNewPlaylist(); return null; }
+            if (key.IsCharacter('n'))
+            {
+                if (_state.PendingQueueCount > 0) _state.PlayNext();
+                else _state.StartNewPlaylist();
+                return null;
+            }
             if (key.IsCharacter('r')) { _state.RemovePlaylistTrackSelected(); return null; }
             if (key.IsCharacter('D')) { _state.DeleteActivePlaylist(); return null; }
         }
