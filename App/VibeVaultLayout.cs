@@ -58,7 +58,8 @@ internal sealed partial class VibeVaultApp
                     sidebarCol.Weighted(1, _libraryStats);
                 }));
             }));
-            col.Weighted(3, _activityFeed);
+            if (_showActivityFeed)
+                col.Weighted(3, _activityFeed);
             if (_showCommandDeck)
                 col.Fixed(7, _commandDeckCard);
             col.Fixed(4, _seekBar);
@@ -87,7 +88,8 @@ internal sealed partial class VibeVaultApp
                 row.Fixed(34, _playlistPanel);
                 row.Fill(_playlistTracks);
             }));
-            col.Weighted(3, _activityFeed);
+            if (_showActivityFeed)
+                col.Weighted(3, _activityFeed);
             if (_showCommandDeck)
                 col.Fixed(7, _commandDeckCard);
             col.Fixed(4, _seekBar);

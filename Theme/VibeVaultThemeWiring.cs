@@ -16,7 +16,7 @@ internal sealed partial class VibeVaultApp
         var accentPrimary = VibeVaultTheme.Foreground(p.AccentPrimaryColor);
         var accentSecondary = VibeVaultTheme.Foreground(p.AccentSecondaryColor);
         var selection = VibeVaultTheme.Chip(p.SelectionForegroundColor, p.SelectionBackgroundColor);
-        var focus = accentSecondary.WithBold();
+        var focus = VibeVaultTheme.Foreground(p.SelectionBackgroundColor).WithBold();
 
         _nowPlaying.TitleStyle    = textSecondary.WithBold();
         _nowPlaying.TrackStyle    = textPrimary.WithBold();
@@ -58,7 +58,7 @@ internal sealed partial class VibeVaultApp
         StyleList(_playlistTracks, p);
 
         StyleList(_browserList, p);
-        _browserList.SelectedItemStyle = VibeVaultTheme.Foreground(p.AccentSecondaryColor).WithBold();
+        _browserList.SelectedItemStyle = selection;
         StyleList(_addToPlaylistList, p);
         _addToPlaylistList.SelectedItemStyle = selection;
 

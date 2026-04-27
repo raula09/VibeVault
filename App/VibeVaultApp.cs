@@ -31,12 +31,15 @@ internal sealed partial class VibeVaultApp : TesseraApp
 
     private static readonly UiPalette[] UiPalettes =
     [
-        new("Neon Violet", 0x8D4BCE, 0xF2E6FF, 0xCFB4F2, 0x8E73B0, 0xE4A0FF, 0xFFCB72, 0x1A0E2A, 0xD689FF, 0x311D4C, 0x122215, 0x8FE1A8, 0xEBD6FF, 0x4A2F58, 0xF29CFF, 0x5A4D73, 0xD3EEFF, 0xFFD978, 0xB6FFD9, 0xAEE9FF),
-        new("Aqua Pulse", 0x45BEE0, 0xE9F8FF, 0xA9DEF2, 0x6FA5BD, 0x7FE8FF, 0xFFD27A, 0x06222A, 0x7FE8FF, 0x123847, 0x0E2A1A, 0x87DFA8, 0xD8ECF7, 0x28485A, 0x75E4FF, 0x355B6A, 0xCEF6FF, 0xFFCF69, 0xB6F4D8, 0x9FE9FF),
-        new("Solar Flare", 0xD79A3D, 0xFFF4E2, 0xEFC18A, 0xB88A54, 0xFFBA69, 0xFFE380, 0x2C1807, 0xFFB55E, 0x4E2E0D, 0x25220F, 0xB8E286, 0xFFE8CC, 0x61452A, 0xFFB76A, 0x6E5438, 0xFFEFD2, 0xFFE380, 0xDDF7B3, 0xFFE0B3),
-        new("Emerald Night", 0x47B97E, 0xE9FFF3, 0xAEE7CA, 0x74B896, 0x7CF0B7, 0xC7F28F, 0x082014, 0x77E2B2, 0x173D2A, 0x122617, 0x97E9B8, 0xD9F7E8, 0x325A46, 0x7EEFBF, 0x40624E, 0xDFFFEF, 0xC8F49A, 0xBDF7D6, 0xA8FFD2),
-        new("Rosewave", 0xD36EA4, 0xFFF0F8, 0xF2B9D5, 0xBE84A1, 0xFFA9D4, 0xFFD58C, 0x2A0E1F, 0xFF9FCE, 0x4A2238, 0x261810, 0xF0C77B, 0xFFE3EF, 0x60334A, 0xFFA8D7, 0x6A4A5B, 0xFFEAF4, 0xFFD57B, 0xFFD2E8, 0xFFC8EA),
-        new("Mono Ice", 0x90A4B8, 0xF5FAFF, 0xCFDCE8, 0x97A8B7, 0xDFEFFF, 0xD8E2EC, 0x121A22, 0xD2E6FA, 0x2A3642, 0x1E2730, 0xB8C8D8, 0xEDF4FA, 0x3B4A58, 0xD2E6FA, 0x4D5D6D, 0xEAF6FF, 0xE0EAF4, 0xDAE7F3, 0xD7E9FF)
+        new("Twilight Orchid", 0x9387BF, 0xF6F2FF, 0xDED5F6, 0xACA3C8, 0xD0BEFF, 0xE0D8FF, 0x181327, 0xC4B1FF, 0x312949, 0x13261A, 0x9FE2BA, 0xEFE8FF, 0x5A4E79, 0xD5C6FF, 0x6F6592, 0xF3ECFF, 0xE4DCFF, 0xE1F2EA, 0xDDF0FF),
+        new("Harbor Cyan", 0x79C4D4, 0xF1FDFF, 0xCAF1F8, 0x9ABDC3, 0xA2F0FF, 0xBDEFFF, 0x0B1D22, 0x95E4F5, 0x21424B, 0x10271D, 0xA0E3BF, 0xE5F8FC, 0x45707A, 0xA6EEFF, 0x4F7983, 0xE6FBFF, 0xC5F4FF, 0xDCF4EF, 0xD7F6FF),
+        new("Amber Dusk", 0xD1A262, 0xFFF8EA, 0xF5DCB8, 0xC0A17A, 0xFFC98B, 0xFFE0A8, 0x28180A, 0xF2BA7D, 0x553820, 0x1A2A1D, 0xA7D99A, 0xFFF0DE, 0x74563E, 0xFFCC92, 0x83674F, 0xFFF2DB, 0xFFE3AE, 0xEAF3D8, 0xFFEBCB),
+        new("Forest Glass", 0x78B695, 0xF1FFF6, 0xCDF3E1, 0x9ABCAC, 0xA9EFC8, 0xC9F1D8, 0x0C2218, 0x98E0B9, 0x234632, 0x142A1F, 0xA8E7C1, 0xE8FBF2, 0x4A6D5A, 0xACEFCB, 0x557564, 0xEAFBF2, 0xCFF3DD, 0xDCF4E8, 0xD6FFE9),
+        new("Rose Clay", 0xCE95AE, 0xFFF6FA, 0xF5D8E6, 0xBF9CAB, 0xF5BED5, 0xF0CDE0, 0x2A1520, 0xEAB2CA, 0x523140, 0x21281B, 0xC2DFB1, 0xFDECF4, 0x6D4B5B, 0xF6C2D8, 0x7A6070, 0xFEEEF5, 0xF3D4E5, 0xF7E4EC, 0xFFDDED),
+        new("Slate Frost", 0xA5BAC8, 0xFAFDFF, 0xDFEAF1, 0xAFC0CD, 0xD8E8F8, 0xE3EEFF, 0x121A21, 0xCCDDF0, 0x34414C, 0x1A2A22, 0xB9DFCC, 0xF1F7FB, 0x5A6876, 0xDDEBFA, 0x677685, 0xF3F8FD, 0xE7F0FF, 0xE8F0F7, 0xE4F3FF),
+        new("Lagoon Mint", 0x7ACDBA, 0xF2FFFB, 0xCBF4EA, 0x9DC6BC, 0x99F5DE, 0xBDF8EA, 0x0B211B, 0x8BE7CF, 0x21463B, 0x11281F, 0xA8EFCB, 0xE6FCF4, 0x46705F, 0x9CF6E0, 0x4F7C69, 0xE7FFF7, 0xC8FAED, 0xD8F5EA, 0xD4FFF3),
+        new("Sunset Coral", 0xDA8E83, 0xFFF5F2, 0xF7D0C8, 0xC7A09A, 0xFFB4A7, 0xFFC7BC, 0x2A1512, 0xF4A295, 0x57322D, 0x20281A, 0xBEE2B0, 0xFFE8E3, 0x77524C, 0xFFBAAD, 0x84605A, 0xFFF0EB, 0xFFD3CA, 0xF8E5E0, 0xFFDCD5),
+        new("Aurora Lime", 0x9DCB74, 0xF8FFE9, 0xDCF2BC, 0xB0C794, 0xC7F59B, 0xDBFFC2, 0x18220D, 0xB9E98C, 0x394E24, 0x13281B, 0xACE8C6, 0xEFFBDD, 0x5F7B45, 0xCAF6A1, 0x6C8751, 0xF3FEE3, 0xE0FFC5, 0xE6F5DB, 0xDEFFD5)
     ];
 
 
@@ -47,6 +50,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
     private readonly TerminalGlyphProfile _glyphProfile = TerminalGlyphProfile.Detect();
     private bool _mouseSeekActive;
     private bool _showCommandDeck = true;
+    private bool _showActivityFeed = false;
     private int _uiPaletteIndex;
     private long _visualFrameCounter;
     private VisualRenderMode _visualRenderMode = VisualRenderMode.Ascii;
@@ -337,6 +341,13 @@ internal sealed partial class VibeVaultApp : TesseraApp
             _showCommandDeck = !_showCommandDeck;
             SaveUiPreferences();
             _state.NotifyStatus(_showCommandDeck ? "controls panel shown" : "controls panel hidden");
+            return null;
+        }
+        if (key.IsCharacter('`'))
+        {
+            _showActivityFeed = !_showActivityFeed;
+            SaveUiPreferences();
+            _state.NotifyStatus(_showActivityFeed ? "execution lane shown" : "execution lane hidden");
             return null;
         }
         if (key.IsCharacter('+') || key.IsCharacter('=')) { _state.AdjustVolume(+5); return null; }
@@ -707,6 +718,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
             new SegmentBarControl.Segment(N(_state.View == AppView.Visualizer ? $"[Visual Mode On{Sep}v]" : $"[Visual Mode Off{Sep}v]"), off),
             new SegmentBarControl.Segment(N(_visualRenderMode == VisualRenderMode.Ascii ? $"[Render ASCII{Sep}i]" : $"[Render IMAGE{Sep}i]"), off),
             new SegmentBarControl.Segment(_showCommandDeck ? "[? Hide Controls]" : "[? Show Controls]", off),
+            new SegmentBarControl.Segment(_showActivityFeed ? "[` Hide Lane]" : "[` Show Lane]", off),
             new SegmentBarControl.Segment(_state.ActivePlaylist is null ? "[Scope Library]" : $"[Scope {_state.ActivePlaylist.Name}]", off),
             new SegmentBarControl.Segment($"[Backend {_state.AudioBackend}]", off),
             new SegmentBarControl.Segment(track is null ? "[Track none]" : $"[Track {track.Title}]", off)
@@ -717,7 +729,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
     {
         var rows = new List<CommandBoardControl.CommandRow>
         {
-            new("Global", N("Space play/pause · n/p next-prev · s shuffle · +/- volume · c cycle theme · ? controls")),
+            new("Global", N("Space play/pause · n/p next-prev · s shuffle · +/- volume · c cycle theme · ? controls · ` lane")),
             new("Views", N("F1/F2/F4 switch · 1/2/4 quick switch · v cover visual"))
         };
 
@@ -856,6 +868,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
     {
         public int ThemeIndex { get; init; }
         public bool ShowCommandDeck { get; init; } = true;
+        public bool ShowActivityFeed { get; init; } = false;
         public string VisualRenderMode { get; init; } = "ascii";
     }
 
@@ -869,6 +882,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
             if (settings is null) return;
             _uiPaletteIndex = Math.Clamp(settings.ThemeIndex, 0, UiPalettes.Length - 1);
             _showCommandDeck = settings.ShowCommandDeck;
+            _showActivityFeed = settings.ShowActivityFeed;
             _visualRenderMode = string.Equals(settings.VisualRenderMode, "image", StringComparison.OrdinalIgnoreCase)
                 ? VisualRenderMode.Image
                 : VisualRenderMode.Ascii;
@@ -886,6 +900,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
             {
                 ThemeIndex = _uiPaletteIndex,
                 ShowCommandDeck = _showCommandDeck,
+                ShowActivityFeed = _showActivityFeed,
                 VisualRenderMode = _visualRenderMode == VisualRenderMode.Image ? "image" : "ascii"
             };
             var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions
