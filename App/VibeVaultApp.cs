@@ -359,6 +359,14 @@ internal sealed partial class VibeVaultApp : TesseraApp
         if (key.Is(Key.Right)) { _state.SeekBy(5);  return null; }
         if (_state.View == AppView.Library)
         {
+            if (key.IsCharacter(' ', ModifierKeys.Ctrl)) { _state.ToggleLibrarySelectionAtCursor(true); return null; }
+            if (key.Is(Key.Up, ModifierKeys.Shift)) { _state.MoveLibrarySelection(-1, extendSelection: true); return null; }
+            if (key.Is(Key.Down, ModifierKeys.Shift)) { _state.MoveLibrarySelection(1, extendSelection: true); return null; }
+            if (key.IsCharacter('K') || key.IsCharacter('J'))
+            {
+                _state.MoveLibrarySelection(key.IsCharacter('K') ? -1 : 1, extendSelection: true);
+                return null;
+            }
             if (key.Is(Key.Up)   || key.IsCharacter('k')) { _state.MoveLibrarySelection(-1); return null; }
             if (key.Is(Key.Down) || key.IsCharacter('j')) { _state.MoveLibrarySelection(1);  return null; }
             if (key.Is(Key.Enter)) { _state.CueLibrarySelected(); return null; }
@@ -533,9 +541,16 @@ internal sealed partial class VibeVaultApp : TesseraApp
         _albumArtVisualizer.AnimationFrame = _visualFrameCounter;
         _albumArtVisualizer.RenderMode = _visualRenderMode;
      
-        var visibleLibrary = _state.BuildVisibleLibrary();
-        _libraryList.SetItems(visibleLibrary.Select(t =>
-            new ScrollListControl.ListItem($"{t.Artist}  {N("–")}  {t.Title}", t.DisplayDuration)).ToArray());
+        var visibleLibrary = _state.BuildVisibleLibrarySourceIndices();
+        _libraryList.SetItems(visibleLibrary.Select(i =>
+        {
+            var t = _state.Library[i];
+            var mark = _state.IsLibraryTrackMarked(i) ? "[x]" : "[ ]";
+            return new ScrollListControl.ListItem($"{mark} {t.Artist}  {N("–")}  {t.Title}", t.DisplayDuration);
+        }).ToArray());
+        _libraryList.Title = _state.LibraryMarkedCount > 0
+            ? $"Library{Sep}F1{Sep}selected {_state.LibraryMarkedCount}"
+            : $"Library{Sep}F1";
         _libraryList.SelectedIndex = _state.BuildVisibleLibrarySelectedIndex();
         _libraryList.CurrentIndex  = _state.BuildVisibleLibraryCurrentIndex();
 
@@ -751,7 +766,8 @@ internal sealed partial class VibeVaultApp : TesseraApp
         switch (_state.View)
         {
             case AppView.Library:
-                rows.Add(new("Library", N("j/k move · Enter play · a add-to-list · d delete")));
+                rows.Add(new("Library", N("j/k move · Shift+Up/Down range · Ctrl+Space toggle · a add-to-list")));
+                rows.Add(new("Library", N("Enter play · d delete · Ctrl+F search · Esc clear")));
                 rows.Add(new("Search", N("Ctrl+F edit filter · Enter finish · Esc clear")));
                 break;
 

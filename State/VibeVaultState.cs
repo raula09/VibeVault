@@ -36,6 +36,8 @@ internal sealed class VibeVaultState : IDisposable
     private readonly List<double> _fallbackBandRate = [];
 
     private int  _librarySelected;
+    private readonly HashSet<int> _libraryMarked = [];
+    private int _libraryRangeAnchor = -1;
     private int  _playlistTrackSelected;
     private int  _playlistPanelSelected;
     private int  _addToPlaylistSelected;
@@ -101,11 +103,25 @@ internal sealed class VibeVaultState : IDisposable
     public int AddToPlaylistSelectedIndex => _addToPlaylistSelected;
     public int BrowserSelectedIndex      => _browserSelected;
     public int BrowserMarkedCount => _browserMarked.Count;
+    public int LibraryMarkedCount => _libraryMarked.Count;
 
     public string BrowserPath => _browserPath;
-    public string AddToPlaylistPrompt => _library.Count == 0
-        ? "Add Track To Playlist"
-        : $"Add \"{_library[_librarySelected].Title}\" To Playlist";
+    public string AddToPlaylistPrompt
+    {
+        get
+        {
+            if (_library.Count == 0) return "Add Track To Playlist";
+
+            var selection = BuildLibrarySelectionForPlaylistAddIndices();
+            if (selection.Count <= 1)
+            {
+                var selectedIndex = Math.Clamp(_librarySelected, 0, _library.Count - 1);
+                return $"Add \"{_library[selectedIndex].Title}\" To Playlist";
+            }
+
+            return $"Add {selection.Count} Tracks To Playlist";
+        }
+    }
     public string VisualizerLine => BuildVisualizerLine();
     public double CurrentLoudnessLevel => GetCurrentLoudnessLevel();
 
@@ -134,6 +150,8 @@ internal sealed class VibeVaultState : IDisposable
 
     public IReadOnlyList<LibraryTrack> BuildVisibleLibrary() =>
         BuildVisibleLibraryIndices().Select(i => _library[i]).ToArray();
+    public IReadOnlyList<int> BuildVisibleLibrarySourceIndices() =>
+        BuildVisibleLibraryIndices();
 
     public IReadOnlyList<LibraryTrack> BuildVisiblePlaylistTracks() =>
         BuildVisiblePlaylistTrackIndices().Select(i => _playlistTracks[i]).ToArray();
@@ -433,7 +451,7 @@ internal sealed class VibeVaultState : IDisposable
             RefreshBrowser();
     }
 
-    public void MoveLibrarySelection(int delta)
+    public void MoveLibrarySelection(int delta, bool extendSelection = false)
     {
         var visible = BuildVisibleLibraryIndices();
         if (visible.Count == 0)
@@ -442,9 +460,37 @@ internal sealed class VibeVaultState : IDisposable
             return;
         }
 
+        var before = _librarySelected;
         var at = Math.Max(0, visible.IndexOf(_librarySelected));
         at = Math.Clamp(at + delta, 0, visible.Count - 1);
         _librarySelected = visible[at];
+
+        if (!extendSelection)
+        {
+            _libraryRangeAnchor = _librarySelected;
+            return;
+        }
+
+        if (_libraryRangeAnchor < 0 || _libraryRangeAnchor >= _library.Count)
+            _libraryRangeAnchor = before;
+        SelectLibraryRange(_libraryRangeAnchor, _librarySelected);
+    }
+
+    public void ToggleLibrarySelectionAtCursor(bool additive)
+    {
+        if (_library.Count == 0) return;
+        _librarySelected = Math.Clamp(_librarySelected, 0, _library.Count - 1);
+
+        if (!additive)
+            _libraryMarked.Clear();
+
+        if (!_libraryMarked.Add(_librarySelected))
+            _libraryMarked.Remove(_librarySelected);
+
+        _libraryRangeAnchor = _librarySelected;
+        SetStatus(_libraryMarked.Count == 0
+            ? "selection cleared"
+            : $"{_libraryMarked.Count} track(s) selected");
     }
 
     public void MovePlaylistPanel(int delta)
@@ -691,10 +737,30 @@ internal sealed class VibeVaultState : IDisposable
         _playlistPanelSelected = Math.Clamp(_addToPlaylistSelected, 0, _playlists.Count - 1);
         _activePlaylistId = _playlists[_playlistPanelSelected].Id;
 
-        var track = _library[_librarySelected];
-        _db.AddTrackToPlaylist(_activePlaylistId, track.Id);
+        var selectedIndices = BuildLibrarySelectionForPlaylistAddIndices();
+        if (selectedIndices.Count == 0)
+        {
+            View = AppView.Library;
+            SetStatus("no tracks selected");
+            return;
+        }
+
+        foreach (var index in selectedIndices)
+            _db.AddTrackToPlaylist(_activePlaylistId, _library[index].Id);
+
         _playlistTracks = _db.LoadPlaylistTracks(_activePlaylistId).ToList();
-        SetStatus($"added  {track.Title}  →  {ActivePlaylist?.Name}");
+        if (selectedIndices.Count == 1)
+        {
+            var track = _library[selectedIndices[0]];
+            SetStatus($"added  {track.Title}  →  {ActivePlaylist?.Name}");
+        }
+        else
+        {
+            SetStatus($"added  {selectedIndices.Count} track(s)  →  {ActivePlaylist?.Name}");
+        }
+
+        _libraryMarked.Clear();
+        _libraryRangeAnchor = _librarySelected;
         View = AppView.Library;
     }
 
@@ -902,6 +968,8 @@ internal sealed class VibeVaultState : IDisposable
     {
         _library   = _db.LoadAllTracks().ToList();
         _playlists = _db.LoadAllPlaylists().ToList();
+        _libraryMarked.Clear();
+        _libraryRangeAnchor = -1;
         if (_activePlaylistId is not null)
             _playlistTracks = _db.LoadPlaylistTracks(_activePlaylistId).ToList();
     }
@@ -950,6 +1018,35 @@ internal sealed class VibeVaultState : IDisposable
         for (var i = start; i <= end; i++)
             if (IsBrowserEntrySelectable(i))
                 _browserMarked.Add(i);
+    }
+
+    private void SelectLibraryRange(int a, int b)
+    {
+        _libraryMarked.Clear();
+        if (_library.Count == 0) return;
+
+        var start = Math.Clamp(Math.Min(a, b), 0, _library.Count - 1);
+        var end = Math.Clamp(Math.Max(a, b), 0, _library.Count - 1);
+        for (var i = start; i <= end; i++)
+            _libraryMarked.Add(i);
+
+        SetStatus($"{_libraryMarked.Count} track(s) selected");
+    }
+
+    public bool IsLibraryTrackMarked(int index) => _libraryMarked.Contains(index);
+
+    private List<int> BuildLibrarySelectionForPlaylistAddIndices()
+    {
+        if (_library.Count == 0) return [];
+
+        if (_libraryMarked.Count == 0)
+            return [Math.Clamp(_librarySelected, 0, _library.Count - 1)];
+
+        var selected = _libraryMarked
+            .Where(i => i >= 0 && i < _library.Count)
+            .OrderBy(i => i)
+            .ToList();
+        return selected.Count == 0 ? [Math.Clamp(_librarySelected, 0, _library.Count - 1)] : selected;
     }
 
     private string BuildVisualizerLine()

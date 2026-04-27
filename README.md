@@ -114,8 +114,10 @@ dotnet run
 | Key | Action |
 |-----|--------|
 | `j` / `k` or `↓` / `↑` | Move selection |
+| `Shift+Up/Down` | Range-select tracks |
+| `Ctrl+Space` | Toggle focused track in selection |
 | `Enter` | Play selected track |
-| `a` | Add selected track to playlist |
+| `a` | Add selected track(s) to playlist |
 | `d` / `Delete` | Remove selected track from library |
 | `Ctrl+F` | Start search |
 | `Esc` | Clear search |
@@ -163,6 +165,20 @@ Configuration and data are stored in the VibeVault app-data directory.
 |------|-------------|
 | `library.db` | SQLite library + playlists |
 | `ui-settings.json` | Theme index, controls-panel visibility, visual render mode |
+
+## Screenshots
+
+### Library
+
+<img src="docs/media/Screenshot_20260427_104532.webp" alt="Library View" width="760" />
+
+### Playlist + Track Panels
+
+<img src="docs/media/Screenshot_20260427_105115.webp" alt="Playlist View" width="760" />
+
+### Album Art Visualizer
+
+<img src="docs/media/Screenshot_20260427_105238.webp" alt="Visualizer View" width="760" />
 
 ## License
 
