@@ -148,6 +148,7 @@ For this project, terminal install is better for active development and quick te
 | `Space` | Single-select file |
 | `Ctrl+Space` | Toggle marked file |
 | `Shift+Up/Down` | Range-select files |
+| `g` | Paste a shared Google Drive folder link and import MP3s |
 | `Esc` | Exit import browser |
 
 ## Backends

@@ -8,6 +8,7 @@ namespace VibeVault;
 internal sealed class AudioMeterControl : Control
 {
     private static readonly char[] LevelChars = "▁▂▃▄▅▆▇█".ToCharArray();
+    private static readonly char[] PartialHeightChars = "▁▂▃▄▅▆▇".ToCharArray();
     private readonly List<double> _smoothed = [];
 
     public string Title { get; set; } = "Audio Meter";
@@ -64,23 +65,37 @@ internal sealed class AudioMeterControl : Control
             var level = levels[i];
             var normalized = level / 7.0;
             var loudnessBoost = 0.22 + (OverallLevel * 0.95);
-            var cells = Math.Clamp((int)Math.Round((normalized * loudnessBoost) * barHeight), 0, barHeight);
-            if (cells == 0) continue;
-            for (var h = 0; h < cells; h++)
+            var height = Math.Clamp((normalized * loudnessBoost) * barHeight, 0, barHeight);
+            var fullCells = Math.Clamp((int)Math.Floor(height), 0, barHeight);
+            var fraction = Math.Clamp(height - fullCells, 0.0, 1.0);
+
+            if (fullCells <= 0 && fraction <= 0.001) continue;
+
+            for (var h = 0; h < fullCells; h++)
             {
                 var y = baselineY - 1 - h;
                 if (y < content.Y) break;
                 canvas.WriteText(x, y, Styled(TopBarStyle, UseAsciiGlyphs ? "#" : "█"), 1);
             }
+
+            if (!UseAsciiGlyphs && fraction > 0.001 && fullCells < barHeight)
+            {
+                var partialY = baselineY - 1 - fullCells;
+                if (partialY >= content.Y)
+                {
+                    var fracIndex = Math.Clamp((int)Math.Ceiling(fraction * PartialHeightChars.Length) - 1, 0, PartialHeightChars.Length - 1);
+                    canvas.WriteText(x, partialY, Styled(TopBarStyle, PartialHeightChars[fracIndex].ToString()), 1);
+                }
+            }
         }
     }
 
-    private int[] BuildLevels(int bars)
+    private double[] BuildLevels(int bars)
     {
         var raw = ParseRawLevels();
         EnsureSmoothCapacity(bars);
 
-        var result = new int[bars];
+        var result = new double[bars];
         for (var i = 0; i < bars; i++)
         {
             var sampleIndex = (int)Math.Round((i / (double)Math.Max(1, bars - 1)) * Math.Max(0, raw.Count - 1));
@@ -89,11 +104,11 @@ internal sealed class AudioMeterControl : Control
             target = Math.Clamp(target * (0.30 + (OverallLevel * 0.80)), 0, 7);
             var previous = _smoothed[i];
             var blended = target >= previous
-                ? previous + ((target - previous) * 0.74)
-                : previous + ((target - previous) * 0.42);
+                ? previous + ((target - previous) * 0.90)
+                : previous + ((target - previous) * 0.62);
 
             _smoothed[i] = blended;
-            result[i] = (int)Math.Round(Math.Clamp(blended, 0, 7));
+            result[i] = Math.Clamp(blended, 0, 7);
         }
 
         return result;

@@ -26,6 +26,9 @@ internal sealed partial class VibeVaultApp
             case AppView.AddToPlaylist:
                 BuildAddToPlaylistDialog(body);
                 break;
+            case AppView.GoogleDriveImport:
+                BuildGoogleDriveImportDialog(body);
+                break;
         }
     }
 
@@ -142,6 +145,25 @@ internal sealed partial class VibeVaultApp
                 col.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
                 col.Fixed(5, _dialogLabel);
                 col.Fixed(10, _addToPlaylistList);
+                col.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
+            }));
+            row.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
+        });
+    }
+
+    private void BuildGoogleDriveImportDialog(ContentBuilder body)
+    {
+        _dialogLabel.Title = "Google Drive Import";
+        _dialogLabel.Text = "Paste shared folder link and press Enter";
+
+        body.Row(row =>
+        {
+            row.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
+            row.Fixed(92, inner => inner.Column(col =>
+            {
+                col.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
+                col.Fixed(5, _dialogLabel);
+                col.Fixed(3, _searchBar);
                 col.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
             }));
             row.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });

@@ -87,7 +87,12 @@ Ensure-DotnetSdk
 Ensure-RequiredAudioBackend
 Ensure-OptionalFfmpeg
 
-$arch = if ([System.Environment]::Is64BitOperatingSystem) { "x64" } else { throw "Only 64-bit Windows is supported." }
+$osArch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
+$arch = switch ($osArch) {
+  ([System.Runtime.InteropServices.Architecture]::Arm64) { "arm64" }
+  ([System.Runtime.InteropServices.Architecture]::X64) { "x64" }
+  default { throw "Unsupported Windows architecture: $osArch. Supported: x64, arm64." }
+}
 $rid = "win-$arch"
 
 $publishDir = Join-Path $RootDir "dist\local-install\$rid"

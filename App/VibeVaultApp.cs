@@ -282,6 +282,16 @@ internal sealed partial class VibeVaultApp : TesseraApp
             return null;
         }
 
+        if (_state.View == AppView.GoogleDriveImport)
+        {
+            if (key.Is(Key.Enter)) { _state.ConfirmGoogleDriveImport(); return null; }
+            if (key.Is(Key.Escape)) { _state.CancelGoogleDriveImportDialog(); return null; }
+            if (key.Is(Key.Backspace)) { _state.GoogleDriveLinkBackspace(); return null; }
+            if (TryGetTypedChar(key, out var ch))
+                _state.GoogleDriveLinkAppendChar(ch);
+            return null;
+        }
+
         if (_state.View == AppView.AddToPlaylist)
         {
             if (key.Is(Key.Escape)) { _state.CancelAddToPlaylistDialog(); return null; }
@@ -297,6 +307,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
         if (_state.View == AppView.Browser)
         {
             if (key.Is(Key.Escape))  { _state.SwitchView(AppView.Library); return null; }
+            if (key.IsCharacter('g')) { _state.StartGoogleDriveImportDialog(); return null; }
             if (key.IsCharacter(' ', ModifierKeys.Ctrl)) { _state.ToggleBrowserSelectionAtCursor(true); return null; }
             if (key.IsCharacter(' ')) { _state.ToggleBrowserSelectionAtCursor(false); return null; }
             if (key.Is(Key.Up, ModifierKeys.Shift)) { _state.MoveBrowserSelection(-1, extendSelection: true); return null; }
@@ -395,7 +406,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
 
     private void ToggleVisualizerView()
     {
-        if (_state.View == AppView.NewPlaylist || _state.View == AppView.AddToPlaylist)
+        if (_state.View == AppView.NewPlaylist || _state.View == AppView.AddToPlaylist || _state.View == AppView.GoogleDriveImport)
             return;
 
         if (_state.View == AppView.Visualizer)
@@ -573,8 +584,19 @@ internal sealed partial class VibeVaultApp : TesseraApp
         _workspaceTabs.SetSegments(BuildWorkspaceSegments());
         _modeChips.SetSegments(BuildModeSegments(track));
 
-        _dialogLabel.Title = "New Playlist";
-        _dialogLabel.Text = $"> {_state.NewPlaylistName}_";
+        if (_state.View == AppView.NewPlaylist)
+        {
+            _dialogLabel.Title = "New Playlist";
+            _dialogLabel.Text = $"> {_state.NewPlaylistName}_";
+        }
+        else if (_state.View == AppView.GoogleDriveImport)
+        {
+            _dialogLabel.Title = "Google Drive Import";
+            _dialogLabel.Text = "Paste shared folder link and press Enter";
+            _searchBar.Title = "Google Drive Folder Link";
+            _searchBar.Text = $"> {_state.GoogleDriveFolderLink}_";
+        }
+
         _addToPlaylistList.SetItems(_state.Playlists.Select(static p =>
             new ScrollListControl.ListItem(p.Name)).ToArray());
         _addToPlaylistList.SelectedIndex = _state.AddToPlaylistSelectedIndex;
@@ -713,7 +735,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
                 break;
 
             case AppView.Browser:
-                rows.Add(new("Import", N("j/k move · Enter open/import · Backspace up-dir · Esc cancel")));
+                rows.Add(new("Import", N("j/k move · Enter open/import · Backspace up-dir · g google-drive link · Esc cancel")));
                 rows.Add(new("Select", N("Space single-select · Ctrl+Space toggle · Shift+Up/Down range")));
                 break;
 
@@ -729,6 +751,11 @@ internal sealed partial class VibeVaultApp : TesseraApp
 
             case AppView.AddToPlaylist:
                 rows.Add(new("Dialog", N("j/k choose playlist · Enter confirm · Esc cancel")));
+                break;
+
+            case AppView.GoogleDriveImport:
+                rows.Add(new("Dialog", "Paste public Google Drive folder link"));
+                rows.Add(new("Dialog", N("Enter import mp3 · Esc cancel")));
                 break;
         }
 

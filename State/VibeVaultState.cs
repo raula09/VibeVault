@@ -5,7 +5,7 @@ using System.Text;
 namespace VibeVault;
 
 
-internal enum AppView { Library, Playlists, Browser, Visualizer, NewPlaylist, AddToPlaylist }
+internal enum AppView { Library, Playlists, Browser, Visualizer, NewPlaylist, AddToPlaylist, GoogleDriveImport }
 
 
 internal sealed class VibeVaultState : IDisposable
@@ -31,6 +31,9 @@ internal sealed class VibeVaultState : IDisposable
     private bool _queueFromPlaylist;
     private double[]? _currentLoudnessEnvelope;
     private bool _liveLevelEnabled;
+    private readonly List<double> _fallbackBandState = [];
+    private readonly List<double> _fallbackBandPhase = [];
+    private readonly List<double> _fallbackBandRate = [];
 
     private int  _librarySelected;
     private int  _playlistTrackSelected;
@@ -45,12 +48,19 @@ internal sealed class VibeVaultState : IDisposable
     private int _browserRangeAnchor = -1;
 
     private string _newPlaylistName = string.Empty;
+    private string _googleDriveFolderLink = string.Empty;
     private string _searchQuery = string.Empty;
+    private readonly string _importCacheDir;
 
     public VibeVaultState(VibeVaultDb db, IAudioPlayer audio)
     {
         _db = db;
         _audio = audio;
+        _importCacheDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "VibeVault",
+            "imports");
+        Directory.CreateDirectory(_importCacheDir);
         Reload();
         if (!_audio.IsAvailable)
             SetStatus("no audio backend found (install ffplay/mpv/mpg123/vlc)");
@@ -64,6 +74,7 @@ internal sealed class VibeVaultState : IDisposable
     public bool    ShuffleOn    => _shuffleOn;
     public string  StatusLine   { get; private set; } = "welcome to vibevault ✦";
     public string  NewPlaylistName => _newPlaylistName;
+    public string GoogleDriveFolderLink => _googleDriveFolderLink;
     public string SearchQuery => _searchQuery;
     public bool IsSearchActive { get; private set; }
     public TimeSpan Uptime => DateTime.UtcNow - _startedAtUtc;
@@ -698,6 +709,93 @@ internal sealed class VibeVaultState : IDisposable
         View = AppView.NewPlaylist;
     }
 
+    public void StartGoogleDriveImportDialog()
+    {
+        _googleDriveFolderLink = string.Empty;
+        View = AppView.GoogleDriveImport;
+    }
+
+    public void GoogleDriveLinkAppendChar(char c)
+    {
+        if (_googleDriveFolderLink.Length < 800)
+            _googleDriveFolderLink += c;
+    }
+
+    public void GoogleDriveLinkBackspace()
+    {
+        if (_googleDriveFolderLink.Length > 0)
+            _googleDriveFolderLink = _googleDriveFolderLink[..^1];
+    }
+
+    public void CancelGoogleDriveImportDialog()
+    {
+        View = AppView.Browser;
+    }
+
+    public void ConfirmGoogleDriveImport()
+    {
+        var link = _googleDriveFolderLink.Trim();
+        if (string.IsNullOrWhiteSpace(link))
+        {
+            SetStatus("paste a google drive folder link");
+            return;
+        }
+
+        SetStatus("google drive import started...");
+        GoogleDriveDownloadResult downloaded;
+        try
+        {
+            downloaded = GoogleDriveFolderDownloader
+                .DownloadMp3FilesAsync(link, _importCacheDir)
+                .GetAwaiter()
+                .GetResult();
+        }
+        catch
+        {
+            SetStatus("google drive import failed");
+            View = AppView.Browser;
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(downloaded.Error))
+        {
+            SetStatus(downloaded.Error!);
+            View = AppView.Browser;
+            return;
+        }
+
+        var imported = 0;
+        string? lastId = null;
+        foreach (var path in downloaded.DownloadedPaths)
+        {
+            var track = Mp3Scanner.ScanFile(path);
+            if (track is null) continue;
+            _db.UpsertTrack(track);
+            imported++;
+            lastId = track.Id;
+        }
+
+        Reload();
+        if (lastId is not null)
+            _librarySelected = Math.Max(0, _library.FindIndex(t => t.Id == lastId));
+
+        View = imported > 0 ? AppView.Library : AppView.Browser;
+        if (imported == 0)
+        {
+            SetStatus("downloaded files but found no valid mp3 tracks");
+            return;
+        }
+
+        var failures = downloaded.FailedDownloads;
+        if (failures > 0)
+        {
+            SetStatus($"imported {imported} track(s) from {downloaded.TotalFiles} downloaded file(s)");
+            return;
+        }
+
+        SetStatus($"imported {imported} track(s) from google drive");
+    }
+
     public void ActivateSearch()
     {
         IsSearchActive = true;
@@ -866,11 +964,27 @@ internal sealed class VibeVaultState : IDisposable
 
         if (envelope is not { Length: > 0 })
         {
-            var loudness = GetCurrentLoudnessLevel();
+            EnsureFallbackBandState(bars);
+            var loudness = Math.Clamp(GetCurrentLoudnessLevel(), 0.0, 1.0);
             for (var i = 0; i < bars; i++)
             {
-                var pulse = (Math.Sin((_pulseTick * 0.28) + (i * 0.24)) + 1.0) * 0.5;
-                var value = Math.Clamp((pulse * (loudness * 0.9)) + (loudness * 0.15), 0, 1);
+                var t = i / (double)Math.Max(1, bars - 1);
+                var lowBandBias = Math.Pow(1.0 - t, 0.72);
+
+                var waveA = (Math.Sin((_pulseTick * _fallbackBandRate[i]) + _fallbackBandPhase[i]) + 1.0) * 0.5;
+                var waveB = (Math.Sin((_pulseTick * (_fallbackBandRate[i] * 1.65)) + (_fallbackBandPhase[i] * 1.27)) + 1.0) * 0.5;
+                var waveC = (Math.Sin((_pulseTick * 0.045) + (t * 14.0)) + 1.0) * 0.5;
+                var motion = (waveA * 0.56) + (waveB * 0.29) + (waveC * 0.15);
+
+                var floor = 0.03 + (loudness * 0.05);
+                var tonal = (0.52 + (lowBandBias * 0.48));
+                var target = Math.Clamp((motion * loudness * tonal) + floor, 0.0, 1.0);
+
+                var previous = _fallbackBandState[i];
+                var blend = target >= previous ? 0.90 : 0.58;
+                var value = previous + ((target - previous) * blend);
+                _fallbackBandState[i] = value;
+
                 var idx = Math.Clamp((int)Math.Round(value * (levels.Length - 1)), 0, levels.Length - 1);
                 sb.Append(levels[idx]);
             }
@@ -911,6 +1025,27 @@ internal sealed class VibeVaultState : IDisposable
         }
 
         return count == 0 ? 0 : (sum / count);
+    }
+
+    private void EnsureFallbackBandState(int bars)
+    {
+        if (_fallbackBandState.Count == bars) return;
+
+        if (_fallbackBandState.Count > bars)
+        {
+            _fallbackBandState.RemoveRange(bars, _fallbackBandState.Count - bars);
+            _fallbackBandPhase.RemoveRange(bars, _fallbackBandPhase.Count - bars);
+            _fallbackBandRate.RemoveRange(bars, _fallbackBandRate.Count - bars);
+            return;
+        }
+
+        var rng = new Random(1979 + bars);
+        while (_fallbackBandState.Count < bars)
+        {
+            _fallbackBandState.Add(0);
+            _fallbackBandPhase.Add(rng.NextDouble() * Math.PI * 2.0);
+            _fallbackBandRate.Add(0.055 + (rng.NextDouble() * 0.11));
+        }
     }
 
     private void BeginLoudnessAnalysis(LibraryTrack track)
