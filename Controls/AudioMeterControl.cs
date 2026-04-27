@@ -18,6 +18,7 @@ internal sealed class AudioMeterControl : Control
     public string Levels { get; set; } = string.Empty;
     public double OverallLevel { get; set; }
     public bool UseAsciiGlyphs { get; set; }
+    public bool UseLegacyTesseraGlyphs { get; set; }
 
     public TesseraStyle TitleStyle { get; set; } = TesseraStyle.Empty;
     public TesseraStyle FocusedTitleStyle { get; set; } = TesseraStyle.Empty;
@@ -78,16 +79,31 @@ internal sealed class AudioMeterControl : Control
                 canvas.WriteText(x, y, Styled(TopBarStyle, UseAsciiGlyphs ? "#" : "█"), 1);
             }
 
-            if (!UseAsciiGlyphs && fraction > 0.001 && fullCells < barHeight)
+            if (fraction > 0.001 && fullCells < barHeight)
             {
                 var partialY = baselineY - 1 - fullCells;
                 if (partialY >= content.Y)
                 {
-                    var fracIndex = Math.Clamp((int)Math.Ceiling(fraction * PartialHeightChars.Length) - 1, 0, PartialHeightChars.Length - 1);
-                    canvas.WriteText(x, partialY, Styled(TopBarStyle, PartialHeightChars[fracIndex].ToString()), 1);
+                    var partialChar = GetPartialHeightChar(fraction);
+                    if (partialChar != '\0')
+                        canvas.WriteText(x, partialY, Styled(TopBarStyle, partialChar.ToString()), 1);
                 }
             }
         }
+    }
+
+    private char GetPartialHeightChar(double fraction)
+    {
+        if (UseAsciiGlyphs) return '\0';
+        if (UseLegacyTesseraGlyphs)
+        {
+            if (fraction < 0.34) return '░';
+            if (fraction < 0.67) return '▒';
+            return '▓';
+        }
+
+        var fracIndex = Math.Clamp((int)Math.Ceiling(fraction * PartialHeightChars.Length) - 1, 0, PartialHeightChars.Length - 1);
+        return PartialHeightChars[fracIndex];
     }
 
     private double[] BuildLevels(int bars)

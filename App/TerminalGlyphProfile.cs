@@ -6,68 +6,105 @@ namespace VibeVault;
 internal sealed class TerminalGlyphProfile
 {
     public bool UseAscii { get; }
+    public bool UseLegacyTesseraGlyphs { get; }
     public BorderStyle BorderStyle => UseAscii ? BorderStyle.Ascii : BorderStyle.Rounded;
-    public string FocusMarker => UseAscii ? "*" : "✦";
+    public string FocusMarker => UseAscii ? "*" : UseLegacyTesseraGlyphs ? "◆" : "✦";
 
-    private TerminalGlyphProfile(bool useAscii)
+    private TerminalGlyphProfile(bool useAscii, bool useLegacyTesseraGlyphs = false)
     {
         UseAscii = useAscii;
+        UseLegacyTesseraGlyphs = useLegacyTesseraGlyphs;
     }
 
     public static TerminalGlyphProfile Detect()
     {
         var forceAscii = ReadBoolEnv("VIBEVAULT_ASCII");
-        if (forceAscii.HasValue) return new TerminalGlyphProfile(forceAscii.Value);
+        if (forceAscii.HasValue) return new TerminalGlyphProfile(forceAscii.Value, useLegacyTesseraGlyphs: false);
 
         var forceUnicode = ReadBoolEnv("VIBEVAULT_UNICODE");
-        if (forceUnicode.HasValue) return new TerminalGlyphProfile(!forceUnicode.Value);
+        if (forceUnicode.HasValue) return new TerminalGlyphProfile(!forceUnicode.Value, useLegacyTesseraGlyphs: false);
 
-        // Default to Unicode/Tessera across hosts (including classic Windows console)
-        // so borders and visual glyphs match Linux. Users can still force ASCII via
-        // VIBEVAULT_ASCII=1 when running in a font/host that cannot render glyphs.
-        return new TerminalGlyphProfile(useAscii: false);
+        if (!OperatingSystem.IsWindows()) return new TerminalGlyphProfile(useAscii: false);
+
+        var termProgram = Environment.GetEnvironmentVariable("TERM_PROGRAM");
+        var term = Environment.GetEnvironmentVariable("TERM");
+        var inWindowsTerminal = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WT_SESSION"));
+        var inVsCodeTerminal = string.Equals(termProgram, "vscode", StringComparison.OrdinalIgnoreCase);
+        var inWezTerm = string.Equals(termProgram, "wezterm", StringComparison.OrdinalIgnoreCase);
+        var inConEmu = string.Equals(
+            Environment.GetEnvironmentVariable("ConEmuANSI"),
+            "ON",
+            StringComparison.OrdinalIgnoreCase);
+        var termLooksModern = !string.IsNullOrWhiteSpace(term) && (
+            term.Contains("xterm", StringComparison.OrdinalIgnoreCase) ||
+            term.Contains("wezterm", StringComparison.OrdinalIgnoreCase) ||
+            term.Contains("msys", StringComparison.OrdinalIgnoreCase) ||
+            term.Contains("cygwin", StringComparison.OrdinalIgnoreCase) ||
+            term.Contains("mintty", StringComparison.OrdinalIgnoreCase));
+
+        var unicodeRichHost = inWindowsTerminal || inVsCodeTerminal || inWezTerm || inConEmu || termLooksModern;
+
+        // Keep Tessera Unicode rendering, but use a Windows-legacy-safe Unicode
+        // subset in classic CMD/PowerShell where some modern glyphs become '?'.
+        return new TerminalGlyphProfile(useAscii: false, useLegacyTesseraGlyphs: !unicodeRichHost);
     }
 
     public string Normalize(string? text)
     {
-        if (!UseAscii || string.IsNullOrEmpty(text)) return text ?? string.Empty;
+        if ((!UseAscii && !UseLegacyTesseraGlyphs) || string.IsNullOrEmpty(text)) return text ?? string.Empty;
 
-        var normalized = text
-            .Replace("▌▌", "||", StringComparison.Ordinal)
-            .Replace("⇌", "<->", StringComparison.Ordinal)
-            .Replace("▶", ">", StringComparison.Ordinal)
-            .Replace("⬆", "^", StringComparison.Ordinal)
-            .Replace("📁", "[DIR]", StringComparison.Ordinal)
-            .Replace("🎵", "[MP3]", StringComparison.Ordinal)
-            .Replace("📄", "[FILE]", StringComparison.Ordinal)
-            .Replace("…", "...", StringComparison.Ordinal);
+        var normalized = UseAscii
+            ? text
+                .Replace("▌▌", "||", StringComparison.Ordinal)
+                .Replace("⇌", "<->", StringComparison.Ordinal)
+                .Replace("▶", ">", StringComparison.Ordinal)
+                .Replace("⬆", "^", StringComparison.Ordinal)
+                .Replace("📁", "[DIR]", StringComparison.Ordinal)
+                .Replace("🎵", "[MP3]", StringComparison.Ordinal)
+                .Replace("📄", "[FILE]", StringComparison.Ordinal)
+                .Replace("…", "...", StringComparison.Ordinal)
+            : text
+                .Replace("✦", "◆", StringComparison.Ordinal)
+                .Replace("▶", "►", StringComparison.Ordinal)
+                .Replace("⇌", "↔", StringComparison.Ordinal);
 
         var builder = new StringBuilder(normalized.Length + 16);
         foreach (var ch in normalized)
         {
             builder.Append(ch switch
             {
-                '✦' => '*',
-                '·' => '|',
-                '—' => '-',
-                '–' => '-',
-                '→' => '>',
-                '◌' => 'o',
-                '▁' => '.',
-                '▂' => ':',
-                '▃' => '-',
-                '▄' => '=',
-                '▅' => '+',
-                '▆' => '*',
-                '▇' => '#',
-                '█' => '#',
-                '◆' => '*',
-                '◇' => 'o',
-                '●' => '*',
-                '▮' => '#',
-                '▯' => '-',
-                '─' => '-',
-                '┄' => '-',
+                '✦' when UseAscii => '*',
+                '·' when UseAscii => '|',
+                '—' when UseAscii => '-',
+                '–' when UseAscii => '-',
+                '→' when UseAscii => '>',
+                '◌' when UseAscii => 'o',
+                '▁' when UseAscii => '.',
+                '▂' when UseAscii => ':',
+                '▃' when UseAscii => '-',
+                '▄' when UseAscii => '=',
+                '▅' when UseAscii => '+',
+                '▆' when UseAscii => '*',
+                '▇' when UseAscii => '#',
+                '█' when UseAscii => '#',
+                '◆' when UseAscii => '*',
+                '◇' when UseAscii => 'o',
+                '●' when UseAscii => '*',
+                '▮' when UseAscii => '#',
+                '▯' when UseAscii => '-',
+                '─' when UseAscii => '-',
+                '┄' when UseAscii => '-',
+                '◌' when UseLegacyTesseraGlyphs => '○',
+                '▁' when UseLegacyTesseraGlyphs => '░',
+                '▂' when UseLegacyTesseraGlyphs => '░',
+                '▃' when UseLegacyTesseraGlyphs => '▒',
+                '▄' when UseLegacyTesseraGlyphs => '▒',
+                '▅' when UseLegacyTesseraGlyphs => '▓',
+                '▆' when UseLegacyTesseraGlyphs => '▓',
+                '▇' when UseLegacyTesseraGlyphs => '█',
+                '◇' when UseLegacyTesseraGlyphs => '○',
+                '▯' when UseLegacyTesseraGlyphs => '□',
+                '┄' when UseLegacyTesseraGlyphs => '─',
                 _ => ch
             });
         }
