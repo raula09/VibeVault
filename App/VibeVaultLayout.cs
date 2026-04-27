@@ -62,12 +62,7 @@ internal sealed partial class VibeVaultApp
             if (_showCommandDeck)
                 col.Fixed(7, _commandDeckCard);
             col.Fixed(4, _seekBar);
-            col.Fixed(8, meter => meter.Row(row =>
-            {
-                row.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
-                row.Fixed(140, _audioMeter);
-                row.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
-            }));
+            col.Fixed(8, meter => meter.Center(center => center.Row(row => row.Fill(_audioMeter)), width: 140));
         });
     }
 
@@ -96,12 +91,7 @@ internal sealed partial class VibeVaultApp
             if (_showCommandDeck)
                 col.Fixed(7, _commandDeckCard);
             col.Fixed(4, _seekBar);
-            col.Fixed(8, meter => meter.Row(row =>
-            {
-                row.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
-                row.Fixed(200, _audioMeter);
-                row.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
-            }));
+            col.Fixed(8, meter => meter.Center(center => center.Row(row => row.Fill(_audioMeter)), width: 200));
         });
     }
 
@@ -119,17 +109,7 @@ internal sealed partial class VibeVaultApp
 
     private void BuildNewPlaylistDialog(ContentBuilder body)
     {
-        body.Row(row =>
-        {
-            row.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
-            row.Fixed(50, inner => inner.Column(col =>
-            {
-                col.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
-                col.Fixed(5, _dialogLabel);
-                col.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
-            }));
-            row.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
-        });
+        body.Center(center => center.Row(row => row.Fill(_dialogLabel)), width: 50, height: 5);
     }
 
     private void BuildAddToPlaylistDialog(ContentBuilder body)
@@ -137,18 +117,11 @@ internal sealed partial class VibeVaultApp
         _dialogLabel.Title = "Add To Playlist";
         _dialogLabel.Text = _state.AddToPlaylistPrompt;
 
-        body.Row(row =>
+        body.Center(center => center.Column(col =>
         {
-            row.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
-            row.Fixed(56, inner => inner.Column(col =>
-            {
-                col.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
-                col.Fixed(5, _dialogLabel);
-                col.Fixed(10, _addToPlaylistList);
-                col.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
-            }));
-            row.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
-        });
+            col.Fixed(5, dialog => dialog.Row(row => row.Fill(_dialogLabel)));
+            col.Fixed(10, list => list.Row(row => row.Fill(_addToPlaylistList)));
+        }), width: 56, height: 15);
     }
 
     private void BuildGoogleDriveImportDialog(ContentBuilder body)
@@ -156,17 +129,10 @@ internal sealed partial class VibeVaultApp
         _dialogLabel.Title = "Google Drive Import";
         _dialogLabel.Text = "Paste shared folder link and press Enter";
 
-        body.Row(row =>
+        body.Center(center => center.Column(col =>
         {
-            row.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
-            row.Fixed(92, inner => inner.Column(col =>
-            {
-                col.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
-                col.Fixed(5, _dialogLabel);
-                col.Fixed(3, _searchBar);
-                col.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
-            }));
-            row.Fill(new Tessera.Controls.Label { Border = Tessera.BorderStyle.None, Text = string.Empty });
-        });
+            col.Fixed(5, dialog => dialog.Row(row => row.Fill(_dialogLabel)));
+            col.Fixed(3, search => search.Row(row => row.Fill(_searchBar)));
+        }), width: 92, height: 8);
     }
 }
