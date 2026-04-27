@@ -67,14 +67,13 @@ internal sealed class SeekBarControl : Control
             ? (UseAsciiGlyphs ? "> LIVE" : UseLegacyUnicodeGlyphs ? "► LIVE" : "▶ LIVE")
             : (UseAsciiGlyphs ? "|| HOLD" : UseLegacyUnicodeGlyphs ? "▮▮ HOLD" : "▌▌ HOLD");
         var vol = Math.Clamp(VolumePercent, 0, 100);
-        var percent = (int)Math.Round(ratio * 100);
         var leftChip = $"[{status}]";
-        var middle = $"{LeftTime} / {RightTime}  {percent:000}%";
-        var rightChip = $"VOL {BuildVolumeMeter(vol, 6)} {vol:000}%";
+        var middle = $"{LeftTime} / {RightTime}";
+        var rightChip = $"VOL {BuildVolumeMeter(vol, 6)}";
 
         if (content.Width < 46)
         {
-            var compact = $"{leftChip} {LeftTime}/{RightTime} {percent:000}%";
+            var compact = $"{leftChip} {LeftTime}/{RightTime}";
             canvas.WriteText(content.X, content.Y, Styled(LabelStyle, Fit(compact, content.Width)), content.Width);
         }
         else

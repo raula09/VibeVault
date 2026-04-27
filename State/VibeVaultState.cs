@@ -163,7 +163,7 @@ internal sealed class VibeVaultState : IDisposable
     private IReadOnlyList<StatItem> BuildNowPlayingStatsCore() =>
     [
         new StatItem("MODE", IsPlaying ? "LIVE" : "PAUSED"),
-        new StatItem("VOL", $"{_volumePercent}%"),
+        new StatItem("VOL", $"{_volumePercent}"),
         new StatItem("POSITION", ProgressText),
         new StatItem("REMAINING", RemainingText),
         new StatItem("QUEUE", BuildQueueStat()),
@@ -403,12 +403,12 @@ internal sealed class VibeVaultState : IDisposable
         {
             var liveApplied = _audio.TrySetVolume(_volumePercent);
             SetStatus(liveApplied
-                ? $"volume  {_volumePercent}%"
-                : $"volume  {_volumePercent}%  (live not supported by {_audio.BackendName})");
+                ? $"volume  {_volumePercent}"
+                : $"volume  {_volumePercent}  (live not supported by {_audio.BackendName})");
             return;
         }
 
-        SetStatus($"volume  {_volumePercent}%");
+        SetStatus($"volume  {_volumePercent}");
     }
 
     public void SeekBy(int deltaSeconds)

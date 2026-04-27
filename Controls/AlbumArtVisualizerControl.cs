@@ -24,7 +24,7 @@ internal sealed class AlbumArtVisualizerControl : Control
     public string TrackTitle { get; set; } = "—";
     public string ArtistAlbumLine { get; set; } = "—";
     public string TimingLine { get; set; } = "00:00 / 00:00";
-    public string MetaLine { get; set; } = "volume 0%";
+    public string MetaLine { get; set; } = "volume 0";
     public double Loudness { get; set; }
     public long AnimationFrame { get; set; }
     public VisualRenderMode RenderMode { get; set; } = VisualRenderMode.Ascii;

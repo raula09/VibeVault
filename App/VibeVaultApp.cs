@@ -526,10 +526,9 @@ internal sealed partial class VibeVaultApp : TesseraApp
         _albumArtVisualizer.ArtistAlbumLine = track is null
             ? N("—")
             : $"{track.Artist}{Sep}{track.Album}{Sep}{track.Year}";
-        _albumArtVisualizer.TimingLine =
-            $"{_state.ProgressText}  {(_state.DurationSeconds > 0 ? $"{(int)Math.Round(_state.Progress * 100)}%" : "0%")}";
+        _albumArtVisualizer.TimingLine = _state.ProgressText;
         _albumArtVisualizer.MetaLine =
-            $"{(_state.IsPlaying ? "LIVE" : "PAUSED")}{Sep}vol {_state.VolumePercent}%{Sep}{_state.AudioBackend}";
+            $"{(_state.IsPlaying ? "LIVE" : "PAUSED")}{Sep}vol {_state.VolumePercent}{Sep}{_state.AudioBackend}";
         _albumArtVisualizer.Loudness = _state.CurrentLoudnessLevel;
         _albumArtVisualizer.AnimationFrame = _visualFrameCounter;
         _albumArtVisualizer.RenderMode = _visualRenderMode;
