@@ -620,6 +620,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
 
     private void ApplyGlyphProfile()
     {
+        _nowPlaying.HeaderTitle = N(_nowPlaying.HeaderTitle);
         _albumArtVisualizer.Title = N(_albumArtVisualizer.Title);
         _albumArtVisualizer.EmptyMessage = N(_albumArtVisualizer.EmptyMessage);
         _libraryList.Title = N(_libraryList.Title);

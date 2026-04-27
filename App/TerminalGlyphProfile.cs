@@ -24,14 +24,26 @@ internal sealed class TerminalGlyphProfile
 
         if (!OperatingSystem.IsWindows()) return new TerminalGlyphProfile(false);
 
-        var outputUtf8 = Console.OutputEncoding.CodePage == 65001;
+        var termProgram = Environment.GetEnvironmentVariable("TERM_PROGRAM");
+        var term = Environment.GetEnvironmentVariable("TERM");
         var inWindowsTerminal = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WT_SESSION"));
-        var inVsCodeTerminal = string.Equals(
-            Environment.GetEnvironmentVariable("TERM_PROGRAM"),
-            "vscode",
+        var inVsCodeTerminal = string.Equals(termProgram, "vscode", StringComparison.OrdinalIgnoreCase);
+        var inWezTerm = string.Equals(termProgram, "wezterm", StringComparison.OrdinalIgnoreCase);
+        var inConEmu = string.Equals(
+            Environment.GetEnvironmentVariable("ConEmuANSI"),
+            "ON",
             StringComparison.OrdinalIgnoreCase);
+        var termLooksModern = !string.IsNullOrWhiteSpace(term) && (
+            term.Contains("xterm", StringComparison.OrdinalIgnoreCase) ||
+            term.Contains("wezterm", StringComparison.OrdinalIgnoreCase) ||
+            term.Contains("msys", StringComparison.OrdinalIgnoreCase) ||
+            term.Contains("cygwin", StringComparison.OrdinalIgnoreCase) ||
+            term.Contains("mintty", StringComparison.OrdinalIgnoreCase));
 
-        var useAscii = !outputUtf8 && !inWindowsTerminal && !inVsCodeTerminal;
+        // Windows code page alone is not reliable: classic hosts can be UTF-8
+        // yet still render many UI glyphs as '?' depending on font/renderer.
+        var unicodeSafeHost = inWindowsTerminal || inVsCodeTerminal || inWezTerm || inConEmu || termLooksModern;
+        var useAscii = !unicodeSafeHost;
         return new TerminalGlyphProfile(useAscii);
     }
 
