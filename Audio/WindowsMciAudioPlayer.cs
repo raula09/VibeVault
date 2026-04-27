@@ -35,24 +35,15 @@ internal sealed class WindowsMciAudioPlayer : IAudioPlayer
             StopCore();
 
             var safePath = filePath.Replace("\"", "\"\"");
-            if (!Send($"open \"{safePath}\" type mpegvideo alias {Alias}")) return false;
+            if (!TryOpenTrack(safePath)) return false;
 
             _isOpen = true;
 
-            if (!Send($"set {Alias} time format milliseconds"))
-            {
-                StopCore();
-                return false;
-            }
-
-            if (!TrySetVolumeInternal(Math.Clamp(volumePercent, 0, 100)))
-            {
-                StopCore();
-                return false;
-            }
+            _ = Send($"set {Alias} time format milliseconds");
+            _ = TrySetVolumeInternal(Math.Clamp(volumePercent, 0, 100));
 
             var startMs = Math.Max(0, startSeconds) * 1000;
-            if (!Send($"play {Alias} from {startMs}"))
+            if (!TryPlayFrom(startMs))
             {
                 StopCore();
                 return false;
@@ -114,6 +105,28 @@ internal sealed class WindowsMciAudioPlayer : IAudioPlayer
         var mciVolume = (int)Math.Round((volumePercent / 100.0) * 1000);
         mciVolume = Math.Clamp(mciVolume, 0, 1000);
         return Send($"setaudio {Alias} volume to {mciVolume}");
+    }
+
+    private bool TryOpenTrack(string safePath)
+    {
+        if (Send($"open \"{safePath}\" type mpegvideo alias {Alias}"))
+            return true;
+
+        return Send($"open \"{safePath}\" alias {Alias}");
+    }
+
+    private bool TryPlayFrom(int startMs)
+    {
+        if (startMs <= 0)
+            return Send($"play {Alias}");
+
+        if (Send($"play {Alias} from {startMs}"))
+            return true;
+
+        if (Send($"seek {Alias} to {startMs}") && Send($"play {Alias}"))
+            return true;
+
+        return Send($"play {Alias}");
     }
 
     private void StopCore()
