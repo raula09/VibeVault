@@ -245,290 +245,28 @@ internal sealed partial class VibeVaultApp : TesseraApp
         {
             window.Padding(1);
             window.Gap(1);
-            window.Body(body => BuildBody(body));
+            window.Body(body => ConfigureBody(body, context));
         });
-    }
-
-    private TesseraEffect? HandleKey(KeyPressed key)
-    {
-        if (key.IsCharacter('c', ModifierKeys.Ctrl)) return TesseraEffects.Quit;
-
-        if (key.IsCharacter('v'))
-        {
-            ToggleVisualizerView();
-            return null;
-        }
-
-        if (_state.View == AppView.Visualizer && key.Is(Key.Escape))
-        {
-            ExitVisualizerView();
-            return null;
-        }
-        if (_state.View == AppView.Visualizer && key.IsCharacter('i'))
-        {
-            _visualRenderMode = _visualRenderMode == VisualRenderMode.Ascii
-                ? VisualRenderMode.Image
-                : VisualRenderMode.Ascii;
-            SaveUiPreferences();
-            _state.NotifyStatus(_visualRenderMode == VisualRenderMode.Ascii
-                ? "visual render: ascii"
-                : "visual render: image");
-            return null;
-        }
-
-        if (_state.View == AppView.NewPlaylist)
-        {
-            if (key.Is(Key.Enter))   { _state.ConfirmNewPlaylist(); return null; }
-            if (key.Is(Key.Escape))  { _state.SwitchView(AppView.Playlists); return null; }
-            if (key.Is(Key.Backspace)) { _state.NewPlaylistBackspace(); return null; }
-            if (TryGetTypedChar(key, out var ch))
-                _state.NewPlaylistAppendChar(ch);
-            return null;
-        }
-
-        if (_state.View == AppView.GoogleDriveImport)
-        {
-            if (key.Is(Key.Enter)) { _state.ConfirmGoogleDriveImport(); return null; }
-            if (key.Is(Key.Escape)) { _state.CancelGoogleDriveImportDialog(); return null; }
-            if (key.Is(Key.Backspace)) { _state.GoogleDriveLinkBackspace(); return null; }
-            if (TryGetTypedChar(key, out var ch))
-                _state.GoogleDriveLinkAppendChar(ch);
-            return null;
-        }
-
-        if (_state.View == AppView.AddToPlaylist)
-        {
-            if (key.Is(Key.Escape)) { _state.CancelAddToPlaylistDialog(); return null; }
-            if (key.Is(Key.Enter)) { _state.ConfirmAddToPlaylist(); return null; }
-            if (key.Is(Key.Up) || key.IsCharacter('k')) { _state.MoveAddToPlaylistSelection(-1); return null; }
-            if (key.Is(Key.Down) || key.IsCharacter('j')) { _state.MoveAddToPlaylistSelection(1); return null; }
-            return null;
-        }
-
-        if ((_state.View == AppView.Library || _state.View == AppView.Playlists) && HandleSearchInput(key))
-            return null;
-
-        if (_state.View == AppView.Browser)
-        {
-            if (key.Is(Key.Escape))  { _state.SwitchView(AppView.Library); return null; }
-            if (key.IsCharacter('g')) { _state.StartGoogleDriveImportDialog(); return null; }
-            if (key.IsCharacter(' ', ModifierKeys.Ctrl)) { _state.ToggleBrowserSelectionAtCursor(true); return null; }
-            if (key.IsCharacter(' ')) { _state.ToggleBrowserSelectionAtCursor(false); return null; }
-            if (key.Is(Key.Up, ModifierKeys.Shift)) { _state.MoveBrowserSelection(-1, extendSelection: true); return null; }
-            if (key.Is(Key.Down, ModifierKeys.Shift)) { _state.MoveBrowserSelection(1, extendSelection: true); return null; }
-            if (key.IsCharacter('K') || key.IsCharacter('J'))
-            {
-                _state.MoveBrowserSelection(key.IsCharacter('K') ? -1 : 1, extendSelection: true);
-                return null;
-            }
-            if (key.Is(Key.Up)   || key.IsCharacter('k')) { _state.MoveBrowserSelection(-1); return null; }
-            if (key.Is(Key.Down) || key.IsCharacter('j')) { _state.MoveBrowserSelection(1);  return null; }
-            if (key.Is(Key.Enter)) { _state.BrowserActivate(); return null; }
-            if (key.Is(Key.Backspace)) { _state.NavigateUp(); return null; }
-            return null;
-        }
-        if (key.Is(Key.F1)) { SwitchToView(AppView.Library);   return null; }
-        if (key.Is(Key.F2)) { SwitchToView(AppView.Playlists); return null; }
-        if (key.Is(Key.F4)) { _state.OpenBrowser(); return null; }
-        if (key.IsCharacter('1')) { SwitchToView(AppView.Library); return null; }
-        if (key.IsCharacter('2')) { SwitchToView(AppView.Playlists); return null; }
-        if (key.IsCharacter('4')) { _state.OpenBrowser(); return null; }
-
-        if (key.IsCharacter(' ')) { _state.TogglePlayPause(); return null; }
-        if (key.IsCharacter('c')) { CycleUiPalette(); return null; }
-        if (key.IsCharacter('?'))
-        {
-            _showCommandDeck = !_showCommandDeck;
-            SaveUiPreferences();
-            _state.NotifyStatus(_showCommandDeck ? "controls panel shown" : "controls panel hidden");
-            return null;
-        }
-        if (key.IsCharacter('`'))
-        {
-            _showActivityFeed = !_showActivityFeed;
-            SaveUiPreferences();
-            _state.NotifyStatus(_showActivityFeed ? "execution lane shown" : "execution lane hidden");
-            return null;
-        }
-        if (key.IsCharacter('n') && _state.PendingQueueCount > 0) { _state.PlayNext(); return null; }
-        if (key.IsCharacter('+') || key.IsCharacter('=')) { _state.AdjustVolume(+5); return null; }
-        if (key.IsCharacter('-') || key.IsCharacter('_')) { _state.AdjustVolume(-5); return null; }
-        if (key.IsCharacter('n') && _state.View != AppView.Playlists) { _state.PlayNext(); return null; }
-        if (key.IsCharacter('p')) { _state.PlayPrevious();    return null; }
-        if (key.IsCharacter('s')) { _state.ToggleShuffle();   return null; }
-        if (key.Is(Key.Left))  { _state.SeekBy(-5); return null; }
-        if (key.Is(Key.Right)) { _state.SeekBy(5);  return null; }
-        if (_state.View == AppView.Library)
-        {
-            if (key.IsCharacter(' ', ModifierKeys.Ctrl)) { _state.ToggleLibrarySelectionAtCursor(true); return null; }
-            if (key.Is(Key.Up, ModifierKeys.Shift)) { _state.MoveLibrarySelection(-1, extendSelection: true); return null; }
-            if (key.Is(Key.Down, ModifierKeys.Shift)) { _state.MoveLibrarySelection(1, extendSelection: true); return null; }
-            if (key.IsCharacter('K') || key.IsCharacter('J'))
-            {
-                _state.MoveLibrarySelection(key.IsCharacter('K') ? -1 : 1, extendSelection: true);
-                return null;
-            }
-            if (key.Is(Key.Up)   || key.IsCharacter('k')) { _state.MoveLibrarySelection(-1); return null; }
-            if (key.Is(Key.Down) || key.IsCharacter('j')) { _state.MoveLibrarySelection(1);  return null; }
-            if (key.Is(Key.Enter)) { _state.CueLibrarySelected(); return null; }
-            if (key.IsCharacter('q') || key.IsCharacter('Q')) { _state.EnqueueLibrarySelection(); return null; }
-            if (key.IsCharacter('a')) { _state.StartAddToPlaylistDialog(); return null; }
-            if (key.Is(Key.Delete) || key.IsCharacter('d')) { _state.DeleteLibrarySelected(); return null; }
-        }
-
-        if (_state.View == AppView.Playlists)
-        {
-            if (key.Is(Key.Tab) || key.IsCharacter('l') || key.IsCharacter('h'))
-            {
-                if (_playlistTracks.IsFocused) _playlistPanel.RequestFocus();
-                else _playlistTracks.RequestFocus();
-                return null;
-            }
-
-            if (_playlistTracks.IsFocused)
-            {
-                if (key.Is(Key.Up)   || key.IsCharacter('k')) { _state.MovePlaylistTrackSelection(-1); return null; }
-                if (key.Is(Key.Down) || key.IsCharacter('j')) { _state.MovePlaylistTrackSelection(1);  return null; }
-                if (key.Is(Key.Enter)) { _state.CuePlaylistTrack(); return null; }
-                if (key.IsCharacter('q') || key.IsCharacter('Q')) { _state.EnqueuePlaylistTrackSelected(); return null; }
-                if (key.IsCharacter('r')) { _state.RemovePlaylistTrackSelected(); return null; }
-                if (key.IsCharacter('n')) { _state.PlayNext(); return null; }
-                return null;
-            }
-
-            if (key.IsCharacter('q') || key.IsCharacter('Q')) { _state.EnqueuePlaylistTrackSelected(); return null; }
-
-            if (key.Is(Key.Up)   || key.IsCharacter('k')) { _state.MovePlaylistPanel(-1);       return null; }
-            if (key.Is(Key.Down) || key.IsCharacter('j')) { _state.MovePlaylistPanel(1);         return null; }
-            if (key.Is(Key.Enter)) { _state.SelectPlaylist(); return null; }
-            if (key.IsCharacter('n'))
-            {
-                if (_state.PendingQueueCount > 0) _state.PlayNext();
-                else _state.StartNewPlaylist();
-                return null;
-            }
-            if (key.IsCharacter('r')) { _state.RemovePlaylistTrackSelected(); return null; }
-            if (key.IsCharacter('D')) { _state.DeleteActivePlaylist(); return null; }
-        }
-
-        return null;
-    }
-
-    private static bool TryGetTypedChar(KeyPressed key, out char ch)
-    {
-        const string printable =
-            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 " +
-            "-_.,:;!?'\"()[]{}+/\\&@#$%^*=~`|<>";
-
-        foreach (var candidate in printable)
-        {
-            if (key.IsCharacter(candidate))
-            {
-                ch = candidate;
-                return true;
-            }
-        }
-
-        ch = default;
-        return false;
-    }
-
-    private void ToggleVisualizerView()
-    {
-        if (_state.View == AppView.NewPlaylist || _state.View == AppView.AddToPlaylist || _state.View == AppView.GoogleDriveImport)
-            return;
-
-        if (_state.View == AppView.Visualizer)
-        {
-            ExitVisualizerView();
-            return;
-        }
-
-        _viewBeforeVisualizer = _state.View switch
-        {
-            AppView.Library => AppView.Library,
-            AppView.Playlists => AppView.Playlists,
-            _ => AppView.Library
-        };
-        _state.SwitchView(AppView.Visualizer);
-        _albumArtVisualizer.RequestFocus();
-        _state.NotifyStatus("cover visual mode on");
-    }
-
-    private void ExitVisualizerView()
-    {
-        SwitchToView(_viewBeforeVisualizer);
-        _state.NotifyStatus("cover visual mode off");
-    }
-
-    private void SwitchToView(AppView view)
-    {
-        _state.SwitchView(view);
-        if (view == AppView.Library) _libraryList.RequestFocus();
-        if (view == AppView.Playlists) _playlistPanel.RequestFocus();
-    }
-
-    private bool HandleSearchInput(KeyPressed key)
-    {
-        if (key.IsCharacter('f', ModifierKeys.Ctrl))
-        {
-            _state.ActivateSearch();
-            return true;
-        }
-
-        if (key.Is(Key.Escape))
-        {
-            if (_state.IsSearchActive || !string.IsNullOrWhiteSpace(_state.SearchQuery))
-            {
-                _state.ClearSearch();
-                return true;
-            }
-            return false;
-        }
-
-        if (!_state.IsSearchActive) return false;
-
-        if (key.Is(Key.Tab) || key.IsCharacter('c'))
-        {
-            _state.DeactivateSearch();
-            return false;
-        }
-
-        if (key.Is(Key.Enter))
-        {
-            _state.DeactivateSearch();
-            return true;
-        }
-
-        if (key.Is(Key.Backspace))
-        {
-            _state.BackspaceSearch();
-            return true;
-        }
-
-        if (key.Is(Key.Up) || key.Is(Key.Down) || key.Is(Key.Left) || key.Is(Key.Right))
-            return true;
-
-        if (TryGetTypedChar(key, out var ch))
-        {
-            _state.AppendSearchChar(ch);
-            return true;
-        }
-
-        return false;
     }
 
     private void RefreshControls()
     {
-        var track = _state.NowPlaying;
+        LibraryTrack? track = _state.NowPlaying;
+        RefreshPlaybackCards(track);
+        RefreshListPanels();
+        RefreshStatsAndChips(track);
+        RefreshSearchAndDialogViews();
+    }
 
-        _nowPlaying.TrackTitle    = track is null ? N("— nothing playing —") : track.Title.ToUpperInvariant();
-        _nowPlaying.ArtistLine    = track?.Artist ?? string.Empty;
-        _nowPlaying.AlbumLine     = track?.Album  ?? string.Empty;
-        _nowPlaying.StatusChip    = N(_state.IsPlaying ? "▶ playing" : "▌▌paused");
-        _nowPlaying.ShuffleChip   = N(_state.ShuffleOn ? "⇌ shuffle" : "→ linear");
-        _nowPlaying.PlaylistChip  = _state.ActivePlaylist?.Name ?? "library";
-        _nowPlaying.ProgressLine  = _state.ProgressText;
+    private void RefreshPlaybackCards(LibraryTrack? track)
+    {
+        _nowPlaying.TrackTitle = track is null ? N("— nothing playing —") : track.Title.ToUpperInvariant();
+        _nowPlaying.ArtistLine = track?.Artist ?? string.Empty;
+        _nowPlaying.AlbumLine = track?.Album ?? string.Empty;
+        _nowPlaying.StatusChip = N(_state.IsPlaying ? "▶ playing" : "▌▌paused");
+        _nowPlaying.ShuffleChip = N(_state.ShuffleOn ? "⇌ shuffle" : "→ linear");
+        _nowPlaying.PlaylistChip = _state.ActivePlaylist?.Name ?? "library";
+        _nowPlaying.ProgressLine = _state.ProgressText;
         _nowPlaying.RemainingLine = _state.RemainingText;
 
         _seekBar.CurrentSeconds = _state.PositionSeconds;
@@ -537,8 +275,10 @@ internal sealed partial class VibeVaultApp : TesseraApp
         _seekBar.LeftTime = LibraryTrack.FormatTime(_state.PositionSeconds);
         _seekBar.RightTime = LibraryTrack.FormatTime(_state.DurationSeconds);
         _seekBar.VolumePercent = _state.VolumePercent;
+
         _audioMeter.Levels = _state.VisualizerLine;
         _audioMeter.OverallLevel = _state.CurrentLoudnessLevel;
+
         _albumArtVisualizer.CoverArt = ResolveAlbumArt(track);
         _albumArtVisualizer.TrackTitle = track?.Title ?? N("— no track playing —");
         _albumArtVisualizer.ArtistAlbumLine = track is null
@@ -550,42 +290,52 @@ internal sealed partial class VibeVaultApp : TesseraApp
         _albumArtVisualizer.Loudness = _state.CurrentLoudnessLevel;
         _albumArtVisualizer.AnimationFrame = _visualFrameCounter;
         _albumArtVisualizer.RenderMode = _visualRenderMode;
-     
-        var visibleLibrary = _state.BuildVisibleLibrarySourceIndices();
-        _libraryList.SetItems(visibleLibrary.Select(i =>
+    }
+
+    private void RefreshListPanels()
+    {
+        IReadOnlyList<int> visibleLibraryIndices = _state.BuildVisibleLibrarySourceIndices();
+        _libraryList.SetItems(visibleLibraryIndices.Select(index =>
         {
-            var t = _state.Library[i];
-            var mark = _state.IsLibraryTrackMarked(i) ? "[x]" : "[ ]";
-            return new ScrollListControl.ListItem($"{mark} {t.Artist}  {N("–")}  {t.Title}", t.DisplayDuration);
+            LibraryTrack track = _state.Library[index];
+            string mark = _state.IsLibraryTrackMarked(index) ? "[x]" : "[ ]";
+            return new ScrollListControl.ListItem($"{mark} {track.Artist}  {N("–")}  {track.Title}", track.DisplayDuration);
         }).ToArray());
         _libraryList.Title = _state.LibraryMarkedCount > 0
             ? $"Library{Sep}F1{Sep}selected {_state.LibraryMarkedCount}"
             : $"Library{Sep}F1";
         _libraryList.SelectedIndex = _state.BuildVisibleLibrarySelectedIndex();
-        _libraryList.CurrentIndex  = _state.BuildVisibleLibraryCurrentIndex();
+        _libraryList.CurrentIndex = _state.BuildVisibleLibraryCurrentIndex();
 
         _playlistPanel.SetItems(_state.Playlists.Select(static p =>
             new ScrollListControl.ListItem(p.Name)).ToArray());
         _playlistPanel.SelectedIndex = _state.PlaylistPanelSelectedIndex;
-        _playlistPanel.CurrentIndex  = _state.Playlists.ToList()
+        _playlistPanel.CurrentIndex = _state.Playlists.ToList()
             .FindIndex(p => p.Id == _state.ActivePlaylist?.Id);
 
-        var visiblePlaylistTracks = _state.BuildVisiblePlaylistTracks();
-        _playlistTracks.SetItems(visiblePlaylistTracks.Select(t =>
-            new ScrollListControl.ListItem($"{t.Artist}  {N("–")}  {t.Title}", t.DisplayDuration)).ToArray());
+        IReadOnlyList<LibraryTrack> visiblePlaylistTracks = _state.BuildVisiblePlaylistTracks();
+        _playlistTracks.SetItems(visiblePlaylistTracks.Select(track =>
+            new ScrollListControl.ListItem($"{track.Artist}  {N("–")}  {track.Title}", track.DisplayDuration)).ToArray());
         _playlistTracks.SelectedIndex = _state.BuildVisiblePlaylistSelectedIndex();
-        _playlistTracks.CurrentIndex  = _state.BuildVisiblePlaylistCurrentIndex();
+        _playlistTracks.CurrentIndex = _state.BuildVisiblePlaylistCurrentIndex();
 
-        _browserList.SetItems(_state.BrowserEntries.Select((entry, i) =>
+        _browserList.SetItems(_state.BrowserEntries.Select((entry, index) =>
         {
-            var selectable = _state.IsBrowserEntrySelectableForImport(i);
-            var mark = selectable ? (_state.IsBrowserEntryMarked(i) ? "[x]" : "[ ]") : "   ";
-            return new ScrollListControl.ListItem($"{mark} {FormatBrowserEntry(entry, _glyphProfile.UseAscii)}");
+            bool selectable = _state.IsBrowserEntrySelectableForImport(index);
+            string mark = selectable ? (_state.IsBrowserEntryMarked(index) ? "[x]" : "[ ]") : "   ";
+            return new ScrollListControl.ListItem($"{mark} {FormatBrowserEntry(entry)}");
         }).ToArray());
         _browserList.SelectedIndex = _state.BrowserSelectedIndex;
-        _browserList.Title         = $"Import{Sep}{_state.BrowserPath}{Sep}selected {_state.BrowserMarkedCount}";
+        _browserList.Title = $"Import{Sep}{_state.BrowserPath}{Sep}selected {_state.BrowserMarkedCount}";
 
-        _playerStats.Text  = FormatStatBlock(_state.BuildNowPlayingStats());
+        _addToPlaylistList.SetItems(_state.Playlists.Select(static p =>
+            new ScrollListControl.ListItem(p.Name)).ToArray());
+        _addToPlaylistList.SelectedIndex = _state.AddToPlaylistSelectedIndex;
+    }
+
+    private void RefreshStatsAndChips(LibraryTrack? track)
+    {
+        _playerStats.Text = FormatStatBlock(_state.BuildNowPlayingStats());
         _libraryStats.Text = FormatStatBlock(_state.BuildLibraryStats());
         _sessionCard.Text = N(
             $"Pulse   {_state.PulseGlyph}\n" +
@@ -600,42 +350,46 @@ internal sealed partial class VibeVaultApp : TesseraApp
             $"Queue    {_state.ActivePlaylist?.Name ?? "library"}  (next {_state.PendingQueueCount})\n" +
             $"Time     {_state.ProgressText}  {_state.RemainingText}");
         _visualizerCard.Text = "\n" + N(_state.VisualizerLine);
-        if (_showCommandDeck)
-            _commandDeckCard.SetRows(BuildCommandRows());
         _activityFeed.Text = _state.RecentEvents.Count == 0
             ? N("— no activity yet —")
             : N(string.Join('\n', _state.RecentEvents.Select(static e => $"OUT  {e}")));
-        var searchScope = _state.View == AppView.Playlists ? "playlist tracks" : "library tracks";
-        var visibleMatches = _state.View == AppView.Playlists ? _state.VisiblePlaylistTrackCount : _state.VisibleLibraryCount;
-        var matchWord = visibleMatches == 1 ? "match" : "matches";
-        var searchText = string.IsNullOrWhiteSpace(_state.SearchQuery)
+
+        if (_showCommandDeck)
+            _commandDeckCard.SetRows(BuildCommandRows());
+
+        _workspaceTabs.SetSegments(BuildWorkspaceSegments());
+        _modeChips.SetSegments(BuildModeSegments(track));
+    }
+
+    private void RefreshSearchAndDialogViews()
+    {
+        string searchScope = _state.View == AppView.Playlists ? "playlist tracks" : "library tracks";
+        int visibleMatches = _state.View == AppView.Playlists ? _state.VisiblePlaylistTrackCount : _state.VisibleLibraryCount;
+        string matchWord = visibleMatches == 1 ? "match" : "matches";
+        string searchText = string.IsNullOrWhiteSpace(_state.SearchQuery)
             ? "type track / artist / album"
             : _state.SearchQuery;
-        var caret = _state.IsSearchActive ? "_" : string.Empty;
+        string caret = _state.IsSearchActive ? "_" : string.Empty;
+
         _searchBar.Title = _state.IsSearchActive
             ? $"Search{Sep}Ctrl+F editing{Sep}Enter done{Sep}Esc clear"
             : $"Search{Sep}Ctrl+F edit{Sep}Esc clear";
         _searchBar.Text = $"/ {searchText}{caret}  [{visibleMatches} {matchWord} in {searchScope}]";
-        _workspaceTabs.SetSegments(BuildWorkspaceSegments());
-        _modeChips.SetSegments(BuildModeSegments(track));
 
         if (_state.View == AppView.NewPlaylist)
         {
             _dialogLabel.Title = "New Playlist";
             _dialogLabel.Text = $"> {_state.NewPlaylistName}_";
+            return;
         }
-        else if (_state.View == AppView.GoogleDriveImport)
+
+        if (_state.View == AppView.GoogleDriveImport)
         {
             _dialogLabel.Title = "Google Drive Import";
             _dialogLabel.Text = "Paste shared folder link and press Enter";
             _searchBar.Title = "Google Drive Folder Link";
             _searchBar.Text = $"> {_state.GoogleDriveFolderLink}_";
         }
-
-        _addToPlaylistList.SetItems(_state.Playlists.Select(static p =>
-            new ScrollListControl.ListItem(p.Name)).ToArray());
-        _addToPlaylistList.SelectedIndex = _state.AddToPlaylistSelectedIndex;
-
     }
 
     private string N(string text) => _glyphProfile.Normalize(text);
@@ -679,21 +433,9 @@ internal sealed partial class VibeVaultApp : TesseraApp
         _albumArtVisualizer.UseAsciiGlyphs = useAsciiGlyphs;
 
         if (_glyphProfile.UseAscii)
-        {
-            ConfigureList(_libraryList, border, focus, "*", ">", ".");
-            ConfigureList(_playlistPanel, border, focus, "*", ">", ".");
-            ConfigureList(_playlistTracks, border, focus, "*", ">", ".");
-            ConfigureList(_browserList, border, focus, "*", ">", ".");
-            ConfigureList(_addToPlaylistList, border, focus, "*", ">", ".");
-        }
+            ConfigureAllLists(border, focus, "*", ">", ".");
         else if (_glyphProfile.UseLegacyUnicodeGlyphs)
-        {
-            ConfigureList(_libraryList, border, focus, "●", "◆", "·");
-            ConfigureList(_playlistPanel, border, focus, "●", "◆", "·");
-            ConfigureList(_playlistTracks, border, focus, "●", "◆", "·");
-            ConfigureList(_browserList, border, focus, "●", "◆", "·");
-            ConfigureList(_addToPlaylistList, border, focus, "●", "◆", "·");
-        }
+            ConfigureAllLists(border, focus, "●", "◆", "·");
 
         _playerStats.Border = border;
         _libraryStats.Border = border;
@@ -711,6 +453,20 @@ internal sealed partial class VibeVaultApp : TesseraApp
         _modeChips.FocusMarker = focus;
 
         _dialogLabel.Border = border;
+    }
+
+    private void ConfigureAllLists(
+        BorderStyle border,
+        string focusMarker,
+        string currentPrefix,
+        string selectedPrefix,
+        string itemPrefix)
+    {
+        ConfigureList(_libraryList, border, focusMarker, currentPrefix, selectedPrefix, itemPrefix);
+        ConfigureList(_playlistPanel, border, focusMarker, currentPrefix, selectedPrefix, itemPrefix);
+        ConfigureList(_playlistTracks, border, focusMarker, currentPrefix, selectedPrefix, itemPrefix);
+        ConfigureList(_browserList, border, focusMarker, currentPrefix, selectedPrefix, itemPrefix);
+        ConfigureList(_addToPlaylistList, border, focusMarker, currentPrefix, selectedPrefix, itemPrefix);
     }
 
     private static void ConfigureList(
@@ -867,7 +623,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
         return null;
     }
 
-    private static string FormatBrowserEntry(string entry, bool ascii)
+    private static string FormatBrowserEntry(string entry)
     {
         var up = "^";
         var folder = "[DIR]";

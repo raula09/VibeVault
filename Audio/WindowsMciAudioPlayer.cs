@@ -145,7 +145,7 @@ internal sealed class WindowsMciAudioPlayer : IAudioPlayer
 
     private static string QueryStatus(string key)
     {
-        var buffer = new StringBuilder(128);
+        StringBuilder buffer = new StringBuilder(128);
         _ = MciSendString($"status {Alias} {key}", buffer, buffer.Capacity, IntPtr.Zero);
         return buffer.ToString().Trim();
     }

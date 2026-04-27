@@ -70,7 +70,7 @@ internal static class AudioLoudnessAnalyzer
 
     private static List<double> ParseRmsLevels(string text)
     {
-        var levels = new List<double>(256);
+        List<double> levels = new List<double>(256);
         foreach (Match match in RmsRegex.Matches(text))
         {
             if (!double.TryParse(match.Groups[1].Value, out var db)) continue;

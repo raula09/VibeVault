@@ -33,24 +33,22 @@ internal sealed class NowPlayingControl : Control
         var clipped = Rect.Intersect(rect, canvas.Bounds);
         if (clipped.IsEmpty) return;
 
-        canvas.DrawBox(clipped, Styled(TitleStyle, HeaderTitle), Border, BorderStyleText);
+        canvas.DrawBox(clipped, ControlCanvasHelpers.ApplyStyle(TitleStyle, HeaderTitle), Border, BorderStyleText);
         var content = clipped.Inset(1, 1).Inset(Padding);
         if (content.IsEmpty) return;
-        ClearContent(canvas, content);
+        ControlCanvasHelpers.ClearContent(canvas, content);
 
-        ClearContent(canvas, content);
+        Line(canvas, content, 0, ControlCanvasHelpers.ApplyStyle(TrackStyle, TrackTitle));
+        Line(canvas, content, 1, ControlCanvasHelpers.ApplyStyle(ArtistStyle, ArtistLine));
+        Line(canvas, content, 2, ControlCanvasHelpers.ApplyStyle(AlbumStyle, AlbumLine));
 
-        Line(canvas, content, 0, Styled(TrackStyle, TrackTitle));
-        Line(canvas, content, 1, Styled(ArtistStyle, ArtistLine));
-        Line(canvas, content, 2, Styled(AlbumStyle, AlbumLine));
-
-        var chips = $"{Styled(ChipStyle, $"[{StatusChip}]")}  " +
-                    $"{Styled(ChipStyle, $"[{ShuffleChip}]")}  " +
-                    $"{Styled(ChipStyle, $"[{PlaylistChip}]")}";
+        var chips = $"{ControlCanvasHelpers.ApplyStyle(ChipStyle, $"[{StatusChip}]")}  " +
+                    $"{ControlCanvasHelpers.ApplyStyle(ChipStyle, $"[{ShuffleChip}]")}  " +
+                    $"{ControlCanvasHelpers.ApplyStyle(ChipStyle, $"[{PlaylistChip}]")}";
         Line(canvas, content, 3, chips);
 
         Line(canvas, content, 4,
-            $"{Styled(ProgressStyle, ProgressLine)}  {Styled(MutedStyle, RemainingLine)}");
+            $"{ControlCanvasHelpers.ApplyStyle(ProgressStyle, ProgressLine)}  {ControlCanvasHelpers.ApplyStyle(MutedStyle, RemainingLine)}");
     }
 
     private static void Line(Canvas canvas, Rect content, int row, string text)
@@ -58,14 +56,4 @@ internal sealed class NowPlayingControl : Control
         if (row >= content.Height) return;
         canvas.WriteText(content.X, content.Y + row, text, content.Width);
     }
-
-    private static void ClearContent(Canvas canvas, Rect content)
-    {
-        var blank = new string(' ', content.Width);
-        for (var row = 0; row < content.Height; row++)
-            canvas.WriteText(content.X, content.Y + row, blank, content.Width);
-    }
-
-    private static string Styled(TesseraStyle style, string text) =>
-        style.IsEmpty || string.IsNullOrEmpty(text) ? text : style.Render(text);
 }

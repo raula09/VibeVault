@@ -54,7 +54,7 @@ internal static class AlbumArtExtractor
             using var process = Process.Start(psi);
             if (process is null) return null;
 
-            using var mem = new MemoryStream(expectedBytes);
+            using MemoryStream mem = new MemoryStream(expectedBytes);
             process.StandardOutput.BaseStream.CopyTo(mem);
             _ = process.StandardError.ReadToEnd();
             process.WaitForExit(2000);

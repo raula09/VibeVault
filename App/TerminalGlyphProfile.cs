@@ -69,7 +69,7 @@ internal sealed class TerminalGlyphProfile
                 .Replace("▶", "►", StringComparison.Ordinal)
                 .Replace("⇌", "↔", StringComparison.Ordinal);
 
-        var builder = new StringBuilder(normalized.Length + 16);
+        StringBuilder builder = new StringBuilder(normalized.Length + 16);
         foreach (var ch in normalized)
         {
             builder.Append(ch switch

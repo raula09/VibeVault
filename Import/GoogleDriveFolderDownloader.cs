@@ -58,7 +58,7 @@ internal static class GoogleDriveFolderDownloader
         if (downloadableFiles.Count == 0)
             return new GoogleDriveDownloadResult([], 0, 0, "no downloadable files found in the shared folder");
 
-        var downloaded = new List<string>(downloadableFiles.Count);
+        List<string> downloaded = new List<string>(downloadableFiles.Count);
         var failed = 0;
         foreach (var file in downloadableFiles)
         {
@@ -91,14 +91,14 @@ internal static class GoogleDriveFolderDownloader
                 (string.IsNullOrWhiteSpace(folderRef.ResourceKey) ? string.Empty : $"?resourcekey={Uri.EscapeDataString(folderRef.ResourceKey)}")
         };
 
-        var merged = new List<DriveFile>();
+        List<DriveFile> merged = new List<DriveFile>();
         string? lastError = null;
         foreach (var url in urls)
         {
             string html;
             try
             {
-                using var req = new HttpRequestMessage(HttpMethod.Get, url);
+                using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Get, url);
                 using var res = await Http.SendAsync(req, cancellationToken).ConfigureAwait(false);
                 if (!res.IsSuccessStatusCode) continue;
                 html = await res.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
@@ -124,7 +124,7 @@ internal static class GoogleDriveFolderDownloader
 
     private static List<DriveFile> ParseDriveFilesFromHtml(string html)
     {
-        var list = new List<DriveFile>();
+        List<DriveFile> list = new List<DriveFile>();
         if (string.IsNullOrWhiteSpace(html)) return list;
 
         var anchorsDouble = Regex.Matches(
@@ -210,7 +210,7 @@ internal static class GoogleDriveFolderDownloader
         CancellationToken cancellationToken)
     {
         var directUrl = $"https://drive.google.com/uc?export=download&id={file.Id}";
-        using var firstRequest = new HttpRequestMessage(HttpMethod.Get, directUrl);
+        using HttpRequestMessage firstRequest = new HttpRequestMessage(HttpMethod.Get, directUrl);
         using var firstResponse = await Http.SendAsync(firstRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         if (!firstResponse.IsSuccessStatusCode) return null;
 
@@ -225,7 +225,7 @@ internal static class GoogleDriveFolderDownloader
                 ? confirm
                 : "https://drive.google.com" + confirm;
 
-            using var secondRequest = new HttpRequestMessage(HttpMethod.Get, confirmUrl);
+            using HttpRequestMessage secondRequest = new HttpRequestMessage(HttpMethod.Get, confirmUrl);
             using var secondResponse = await Http.SendAsync(secondRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
             if (!secondResponse.IsSuccessStatusCode) return null;
 
@@ -257,7 +257,7 @@ internal static class GoogleDriveFolderDownloader
         await stream.CopyToAsync(outFile, cancellationToken).ConfigureAwait(false);
         await outFile.FlushAsync(cancellationToken).ConfigureAwait(false);
 
-        var info = new FileInfo(finalPath);
+        FileInfo info = new FileInfo(finalPath);
         return info.Length == 0 ? null : finalPath;
     }
 

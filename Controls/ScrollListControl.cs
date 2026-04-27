@@ -41,18 +41,18 @@ internal sealed class ScrollListControl : Control
         if (clipped.IsEmpty) return;
 
         var titleText = IsFocused
-            ? Styled(FocusedTitleStyle, $"{Title} {FocusMarker}")
-            : Styled(TitleStyle, Title);
+            ? ControlCanvasHelpers.ApplyStyle(FocusedTitleStyle, $"{Title} {FocusMarker}")
+            : ControlCanvasHelpers.ApplyStyle(TitleStyle, Title);
         var border = IsFocused ? BorderStyleText.Merge(FocusedBorderStyle) : BorderStyleText;
         canvas.DrawBox(clipped, titleText, Border, border);
 
         var content = clipped.Inset(1, 1).Inset(Padding);
         if (content.IsEmpty) return;
-        ClearContent(canvas, content);
+        ControlCanvasHelpers.ClearContent(canvas, content);
 
         if (_items.Count == 0)
         {
-            canvas.WriteText(content.X, content.Y, Styled(MutedStyle, EmptyMessage), content.Width);
+            canvas.WriteText(content.X, content.Y, ControlCanvasHelpers.ApplyStyle(MutedStyle, EmptyMessage), content.Width);
             return;
         }
 
@@ -79,25 +79,22 @@ internal sealed class ScrollListControl : Control
                 canvas.WriteText(
                     content.X,
                     content.Y + row,
-                    $"{Styled(style, prefix)} {item.Label}",
+                    $"{ControlCanvasHelpers.ApplyStyle(style, prefix)} {item.Label}",
                     labelWidth);
             }
             else
             {
-                canvas.WriteText(content.X, content.Y + row, Styled(style, label), labelWidth);
+                canvas.WriteText(content.X, content.Y + row, ControlCanvasHelpers.ApplyStyle(style, label), labelWidth);
             }
 
             if (item.RightMeta is not null)
             {
                 var rx = Math.Max(content.X, content.Right - item.RightMeta.Length);
-                canvas.WriteText(rx, content.Y + row, Styled(MetaStyle, item.RightMeta),
+                canvas.WriteText(rx, content.Y + row, ControlCanvasHelpers.ApplyStyle(MetaStyle, item.RightMeta),
                     content.Right - rx);
             }
         }
     }
-
-    private static string Styled(TesseraStyle s, string t) =>
-        s.IsEmpty || string.IsNullOrEmpty(t) ? t : s.Render(t);
 
     private static int FindBrowserIconIndex(string text)
     {
@@ -112,12 +109,4 @@ internal sealed class ScrollListControl : Control
         if (file >= 0 && (idx < 0 || file < idx)) idx = file;
         if (up >= 0 && (idx < 0 || up < idx)) idx = up;
         return idx;
-    }
-
-    private static void ClearContent(Canvas canvas, Rect content)
-    {
-        var blank = new string(' ', content.Width);
-        for (var row = 0; row < content.Height; row++)
-            canvas.WriteText(content.X, content.Y + row, blank, content.Width);
-    }
-}
+    }}

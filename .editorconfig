@@ -1,0 +1,15 @@
+root = true
+
+[*.cs]
+# Prefer explicit types over var for readability in this codebase.
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = false:suggestion
+csharp_style_var_elsewhere = false:suggestion
+
+# Simplify control flow where safe.
+csharp_style_prefer_conditional_expression_over_assignment = true:suggestion
+csharp_style_prefer_conditional_expression_over_return = true:suggestion
+dotnet_style_coalesce_expression = true:suggestion
+dotnet_style_null_propagation = true:suggestion
+dotnet_style_prefer_simplified_boolean_expressions = true:suggestion
+dotnet_style_prefer_simplified_interpolation = true:suggestion

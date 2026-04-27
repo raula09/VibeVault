@@ -31,17 +31,15 @@ internal sealed class CommandBoardControl : Control
         if (clipped.IsEmpty) return;
 
         var title = IsFocused
-            ? Styled(FocusedTitleStyle, $"{Title} {FocusMarker}")
-            : Styled(TitleStyle, Title);
+            ? ControlCanvasHelpers.ApplyStyle(FocusedTitleStyle, $"{Title} {FocusMarker}")
+            : ControlCanvasHelpers.ApplyStyle(TitleStyle, Title);
         var border = IsFocused ? BorderStyleText.Merge(FocusedBorderStyle) : BorderStyleText;
         canvas.DrawBox(clipped, title, Border, border);
 
         var content = clipped.Inset(1, 1).Inset(Padding);
         if (content.IsEmpty) return;
-        ClearContent(canvas, content);
+        ControlCanvasHelpers.ClearContent(canvas, content);
         if (_rows.Count == 0) return;
-
-        ClearContent(canvas, content);
 
         var columns = content.Width >= 110 ? 2 : 1;
         var columnGap = columns == 2 ? 2 : 0;
@@ -64,9 +62,9 @@ internal sealed class CommandBoardControl : Control
                 var y = content.Y + row;
                 var commandX = Math.Min(content.Right, x + groupWidth + 1);
 
-                canvas.WriteText(x, y, Styled(GroupStyle, Fit(item.Group.ToUpperInvariant(), groupWidth)), groupWidth);
+                canvas.WriteText(x, y, ControlCanvasHelpers.ApplyStyle(GroupStyle, Fit(item.Group.ToUpperInvariant(), groupWidth)), groupWidth);
                 canvas.WriteText(commandX, y,
-                    Styled(CommandStyle, Fit(item.Commands, Math.Max(0, x + columnWidth - commandX))),
+                    ControlCanvasHelpers.ApplyStyle(CommandStyle, Fit(item.Commands, Math.Max(0, x + columnWidth - commandX))),
                     Math.Max(0, x + columnWidth - commandX));
             }
         }
@@ -80,13 +78,4 @@ internal sealed class CommandBoardControl : Control
         return text.PadRight(width);
     }
 
-    private static string Styled(TesseraStyle style, string text) =>
-        style.IsEmpty || string.IsNullOrEmpty(text) ? text : style.Render(text);
-
-    private static void ClearContent(Canvas canvas, Rect content)
-    {
-        var blank = new string(' ', content.Width);
-        for (var row = 0; row < content.Height; row++)
-            canvas.WriteText(content.X, content.Y + row, blank, content.Width);
-    }
 }

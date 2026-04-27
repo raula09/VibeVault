@@ -47,14 +47,14 @@ internal sealed class AlbumArtVisualizerControl : Control
         if (clipped.IsEmpty) return;
 
         var title = IsFocused
-            ? Styled(FocusedTitleStyle, $"{Title} {FocusMarker}")
-            : Styled(TitleStyle, Title);
+            ? ControlCanvasHelpers.ApplyStyle(FocusedTitleStyle, $"{Title} {FocusMarker}")
+            : ControlCanvasHelpers.ApplyStyle(TitleStyle, Title);
         var border = IsFocused ? BorderStyleText.Merge(FocusedBorderStyle) : BorderStyleText;
         canvas.DrawBox(clipped, title, Border, border);
 
         var content = clipped.Inset(1, 1).Inset(Padding);
         if (content.IsEmpty) return;
-        ClearContent(canvas, content);
+        ControlCanvasHelpers.ClearContent(canvas, content);
 
         var infoRows = Math.Clamp(content.Height / 4, 6, 8);
         var artHeight = Math.Max(1, content.Height - infoRows);
@@ -71,7 +71,7 @@ internal sealed class AlbumArtVisualizerControl : Control
             var msg = Fit(EmptyMessage, width);
             var mx = x + Math.Max(0, (width - msg.Length) / 2);
             var my = y + (height / 2);
-            canvas.WriteText(mx, my, Styled(HintStyle.IsEmpty ? InfoStyle : HintStyle, msg), width - (mx - x));
+            canvas.WriteText(mx, my, ControlCanvasHelpers.ApplyStyle(HintStyle.IsEmpty ? InfoStyle : HintStyle, msg), width - (mx - x));
             return;
         }
 
@@ -103,7 +103,7 @@ internal sealed class AlbumArtVisualizerControl : Control
         for (var row = 0; row < height; row++)
         {
             var fy = row / (double)Math.Max(1, height - 1);
-            var line = new StringBuilder(width * 20);
+            StringBuilder line = new StringBuilder(width * 20);
             for (var col = 0; col < width; col++)
             {
                 var fx = col / (double)Math.Max(1, width - 1);
@@ -171,7 +171,7 @@ internal sealed class AlbumArtVisualizerControl : Control
             var topNy = Math.Clamp(((topYNorm - 0.5) / pulse) + 0.5 + wobbleY, 0, 1);
             var botNy = Math.Clamp(((botYNorm - 0.5) / pulse) + 0.5 + wobbleY, 0, 1);
 
-            var line = new StringBuilder(width * 40);
+            StringBuilder line = new StringBuilder(width * 40);
             for (var col = 0; col < width; col++)
             {
                 var fx = col / (double)Math.Max(1, width - 1);
@@ -210,7 +210,7 @@ internal sealed class AlbumArtVisualizerControl : Control
         for (var i = 0; i < height && i < rows.Count; i++)
         {
             var style = i == rows.Count - 1 && !HintStyle.IsEmpty ? HintStyle : InfoStyle;
-            canvas.WriteText(x, y + i, Styled(style, rows[i]), width);
+            canvas.WriteText(x, y + i, ControlCanvasHelpers.ApplyStyle(style, rows[i]), width);
         }
     }
 
@@ -222,17 +222,6 @@ internal sealed class AlbumArtVisualizerControl : Control
         if (text.Length > width) return width == 1 ? "." : text[..(width - 1)] + ".";
         return text.PadRight(width);
     }
-
-    private static void ClearContent(Canvas canvas, Rect content)
-    {
-        var blank = new string(' ', content.Width);
-        for (var row = 0; row < content.Height; row++)
-            canvas.WriteText(content.X, content.Y + row, blank, content.Width);
-    }
-
-    private static string Styled(TesseraStyle style, string text) =>
-        style.IsEmpty || string.IsNullOrEmpty(text) ? text : style.Render(text);
-
     private static (int X, int Y, int Width, int Height) ComputeArtViewport(int x, int y, int width, int height)
     {
         if (width <= 0 || height <= 0) return (x, y, Math.Max(1, width), Math.Max(1, height));

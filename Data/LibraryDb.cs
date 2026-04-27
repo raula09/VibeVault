@@ -48,7 +48,7 @@ internal sealed class VibeVaultDb : IDisposable
 
     public IReadOnlyList<LibraryTrack> LoadAllTracks()
     {
-        var list = new List<LibraryTrack>();
+        List<LibraryTrack> list = new List<LibraryTrack>();
         using var cmd = _conn.CreateCommand();
         cmd.CommandText = "SELECT id,path,title,artist,album,duration_s,bpm,year,added_at FROM tracks ORDER BY artist,album,title";
         using var reader = cmd.ExecuteReader();
@@ -107,7 +107,7 @@ internal sealed class VibeVaultDb : IDisposable
 
     public IReadOnlyList<Playlist> LoadAllPlaylists()
     {
-        var list = new List<Playlist>();
+        List<Playlist> list = new List<Playlist>();
         using var cmd = _conn.CreateCommand();
         cmd.CommandText = "SELECT id,name FROM playlists ORDER BY name";
         using var r = cmd.ExecuteReader();
@@ -147,7 +147,7 @@ internal sealed class VibeVaultDb : IDisposable
 
     public IReadOnlyList<LibraryTrack> LoadPlaylistTracks(string playlistId)
     {
-        var list = new List<LibraryTrack>();
+        List<LibraryTrack> list = new List<LibraryTrack>();
         using var cmd = _conn.CreateCommand();
         cmd.CommandText = """
             SELECT t.id,t.path,t.title,t.artist,t.album,t.duration_s,t.bpm,t.year,t.added_at

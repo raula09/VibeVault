@@ -33,17 +33,16 @@ internal sealed class AudioMeterControl : Control
         if (clipped.IsEmpty) return;
 
         var title = IsFocused
-            ? Styled(FocusedTitleStyle, $"{Title} {FocusMarker}")
-            : Styled(TitleStyle, Title);
+            ? ControlCanvasHelpers.ApplyStyle(FocusedTitleStyle, $"{Title} {FocusMarker}")
+            : ControlCanvasHelpers.ApplyStyle(TitleStyle, Title);
         var border = IsFocused ? BorderStyleText.Merge(FocusedBorderStyle) : BorderStyleText;
         canvas.DrawBox(clipped, title, Border, border);
 
         var content = clipped.Inset(1, 1).Inset(Padding);
         if (content.IsEmpty) return;
-        ClearContent(canvas, content);
+        ControlCanvasHelpers.ClearContent(canvas, content);
         if (content.Height < 3) return;
 
-        ClearContent(canvas, content);
         var baselineY = content.Bottom - 1;
         var barHeight = Math.Max(2, content.Height - 1);
         var bars = Math.Max(1, Math.Min((content.Width + 1) / 2, 96));
@@ -55,7 +54,7 @@ internal sealed class AudioMeterControl : Control
         canvas.WriteText(
             content.X,
             baselineY,
-            Styled(BottomBarStyle.IsEmpty ? TopBarStyle : BottomBarStyle, new string(UseAsciiGlyphs ? '-' : '─', content.Width)),
+            ControlCanvasHelpers.ApplyStyle(BottomBarStyle.IsEmpty ? TopBarStyle : BottomBarStyle, new string(UseAsciiGlyphs ? '-' : '─', content.Width)),
             content.Width);
 
         for (var i = 0; i < bars; i++)
@@ -76,7 +75,7 @@ internal sealed class AudioMeterControl : Control
             {
                 var y = baselineY - 1 - h;
                 if (y < content.Y) break;
-                canvas.WriteText(x, y, Styled(TopBarStyle, UseAsciiGlyphs ? "#" : "█"), 1);
+                canvas.WriteText(x, y, ControlCanvasHelpers.ApplyStyle(TopBarStyle, UseAsciiGlyphs ? "#" : "█"), 1);
             }
 
             if (fraction > 0.001 && fullCells < barHeight)
@@ -86,7 +85,7 @@ internal sealed class AudioMeterControl : Control
                 {
                     var partialChar = GetPartialHeightChar(fraction);
                     if (partialChar != '\0')
-                        canvas.WriteText(x, partialY, Styled(TopBarStyle, partialChar.ToString()), 1);
+                        canvas.WriteText(x, partialY, ControlCanvasHelpers.ApplyStyle(TopBarStyle, partialChar.ToString()), 1);
                 }
             }
         }
@@ -132,7 +131,7 @@ internal sealed class AudioMeterControl : Control
 
     private List<int> ParseRawLevels()
     {
-        var parsed = new List<int>(Levels.Length);
+        List<int> parsed = new List<int>(Levels.Length);
         foreach (var ch in Levels)
         {
             var idx = Array.IndexOf(LevelChars, ch);
@@ -158,13 +157,4 @@ internal sealed class AudioMeterControl : Control
             _smoothed.Add(0);
     }
 
-    private static string Styled(TesseraStyle style, string text) =>
-        style.IsEmpty || string.IsNullOrEmpty(text) ? text : style.Render(text);
-
-    private static void ClearContent(Canvas canvas, Rect content)
-    {
-        var blank = new string(' ', content.Width);
-        for (var row = 0; row < content.Height; row++)
-            canvas.WriteText(content.X, content.Y + row, blank, content.Width);
-    }
 }

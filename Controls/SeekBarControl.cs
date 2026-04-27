@@ -51,16 +51,14 @@ internal sealed class SeekBarControl : Control
         if (clipped.IsEmpty) return;
 
         var title = IsFocused
-            ? Styled(FocusedTitleStyle, $"{Title} {FocusMarker}")
-            : Styled(TitleStyle, Title);
+            ? ControlCanvasHelpers.ApplyStyle(FocusedTitleStyle, $"{Title} {FocusMarker}")
+            : ControlCanvasHelpers.ApplyStyle(TitleStyle, Title);
         var border = IsFocused ? BorderStyleText.Merge(FocusedBorderStyle) : BorderStyleText;
         canvas.DrawBox(clipped, title, Border, border);
 
         var content = clipped.Inset(1, 1).Inset(Padding);
         if (content.IsEmpty) return;
-        ClearContent(canvas, content);
-
-        ClearContent(canvas, content);
+        ControlCanvasHelpers.ClearContent(canvas, content);
 
         var ratio = TotalSeconds > 0 ? Math.Clamp(CurrentSeconds / (double)TotalSeconds, 0, 1) : 0;
         var status = IsPlaying
@@ -74,17 +72,17 @@ internal sealed class SeekBarControl : Control
         if (content.Width < 46)
         {
             var compact = $"{leftChip} {LeftTime}/{RightTime}";
-            canvas.WriteText(content.X, content.Y, Styled(LabelStyle, Fit(compact, content.Width)), content.Width);
+            canvas.WriteText(content.X, content.Y, ControlCanvasHelpers.ApplyStyle(LabelStyle, Fit(compact, content.Width)), content.Width);
         }
         else
         {
-            canvas.WriteText(content.X, content.Y, Styled(KnobStyle.IsEmpty ? LabelStyle : KnobStyle, leftChip), content.Width);
+            canvas.WriteText(content.X, content.Y, ControlCanvasHelpers.ApplyStyle(KnobStyle.IsEmpty ? LabelStyle : KnobStyle, leftChip), content.Width);
             var middleX = content.X + Math.Max(0, (content.Width - middle.Length) / 2);
-            canvas.WriteText(middleX, content.Y, Styled(LabelStyle, middle), Math.Max(0, content.Right - middleX));
+            canvas.WriteText(middleX, content.Y, ControlCanvasHelpers.ApplyStyle(LabelStyle, middle), Math.Max(0, content.Right - middleX));
 
             var rightX = Math.Max(content.X, content.Right - rightChip.Length);
             if (rightX > content.X + leftChip.Length + 1)
-                canvas.WriteText(rightX, content.Y, Styled(TrackStyle.IsEmpty ? LabelStyle : TrackStyle, rightChip), content.Right - rightX);
+                canvas.WriteText(rightX, content.Y, ControlCanvasHelpers.ApplyStyle(TrackStyle.IsEmpty ? LabelStyle : TrackStyle, rightChip), content.Right - rightX);
         }
 
         if (content.Height < 2) return;
@@ -102,10 +100,10 @@ internal sealed class SeekBarControl : Control
             : (UseAsciiGlyphs ? "o" : UseLegacyUnicodeGlyphs ? "□" : "◇");
 
         if (!string.IsNullOrEmpty(leftText))
-            canvas.WriteText(_lastBarRect.X, _lastBarRect.Y, Styled(FillStyle, leftText), leftText.Length);
-        canvas.WriteText(_lastBarRect.X + head, _lastBarRect.Y, Styled(KnobStyle.IsEmpty ? LabelStyle : KnobStyle, knob), 1);
+            canvas.WriteText(_lastBarRect.X, _lastBarRect.Y, ControlCanvasHelpers.ApplyStyle(FillStyle, leftText), leftText.Length);
+        canvas.WriteText(_lastBarRect.X + head, _lastBarRect.Y, ControlCanvasHelpers.ApplyStyle(KnobStyle.IsEmpty ? LabelStyle : KnobStyle, knob), 1);
         if (!string.IsNullOrEmpty(rightText))
-            canvas.WriteText(_lastBarRect.X + head + 1, _lastBarRect.Y, Styled(TrackStyle, rightText), rightText.Length);
+            canvas.WriteText(_lastBarRect.X + head + 1, _lastBarRect.Y, ControlCanvasHelpers.ApplyStyle(TrackStyle, rightText), rightText.Length);
     }
 
     private string BuildVolumeMeter(int volumePercent, int bars)
@@ -139,13 +137,4 @@ internal sealed class SeekBarControl : Control
         return width == 1 ? "." : text[..(width - 1)] + ".";
     }
 
-    private static string Styled(TesseraStyle style, string text) =>
-        style.IsEmpty || string.IsNullOrEmpty(text) ? text : style.Render(text);
-
-    private static void ClearContent(Canvas canvas, Rect content)
-    {
-        var blank = new string(' ', content.Width);
-        for (var row = 0; row < content.Height; row++)
-            canvas.WriteText(content.X, content.Y + row, blank, content.Width);
-    }
 }

@@ -19,6 +19,16 @@ internal interface IAudioPlayer : IDisposable
 
 internal sealed class ExternalAudioPlayer : IAudioPlayer
 {
+    private const string MpvBackend = "mpv";
+    private const string FfplayBackend = "ffplay";
+    private const string CvlcBackend = "cvlc";
+    private const string VlcBackend = "vlc";
+    private const string Mpg123Backend = "mpg123";
+    private const int StopWaitTimeoutMs = 1000;
+    private const int SignalWaitTimeoutMs = 500;
+    private const int MpvVolumeRetryCount = 6;
+    private const int MpvVolumeRetryDelayMs = 25;
+
     private readonly Backend? _backend;
     private Process? _process;
     private bool _paused;
@@ -65,11 +75,11 @@ internal sealed class ExternalAudioPlayer : IAudioPlayer
     public bool TrySetVolume(int volumePercent)
     {
         if (_process is null || _process.HasExited || _backend is null) return false;
-        var safeVolume = Math.Clamp(volumePercent, 0, 100);
+        int safeVolume = Math.Clamp(volumePercent, 0, 100);
 
         return _backend.Name switch
         {
-            "mpv" => TrySetMpvVolume(safeVolume),
+            MpvBackend => TrySetMpvVolume(safeVolume),
             _ => false
         };
     }
@@ -97,7 +107,7 @@ internal sealed class ExternalAudioPlayer : IAudioPlayer
             if (_process is { HasExited: false })
             {
                 _process.Kill(true);
-                _process.WaitForExit(1000);
+                _process.WaitForExit(StopWaitTimeoutMs);
             }
         }
         catch
@@ -141,49 +151,10 @@ internal sealed class ExternalAudioPlayer : IAudioPlayer
             psi.ArgumentList.Add(arg);
 
         if (startSeconds > 0)
-        {
-            switch (backend.Name)
-            {
-                case "ffplay":
-                    psi.ArgumentList.Add("-ss");
-                    psi.ArgumentList.Add(startSeconds.ToString());
-                    break;
-                case "mpv":
-                    psi.ArgumentList.Add($"--start={startSeconds}");
-                    break;
-                case "cvlc":
-                case "vlc":
-                    psi.ArgumentList.Add($"--start-time={startSeconds}");
-                    break;
-            }
-        }
-        switch (backend.Name)
-        {
-            case "ffplay":
-                psi.ArgumentList.Add("-volume");
-                psi.ArgumentList.Add(volumePercent.ToString());
-                break;
-            case "mpv":
-                psi.ArgumentList.Add($"--volume={volumePercent}");
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    mpvIpcPath = Path.Combine(Path.GetTempPath(), $"vibevault-mpv-{Guid.NewGuid():N}.sock");
-                    psi.ArgumentList.Add($"--input-ipc-server={mpvIpcPath}");
-                }
-                break;
-            case "cvlc":
-            case "vlc":
-                psi.ArgumentList.Add($"--volume={Math.Clamp(volumePercent * 2, 0, 200)}");
-                break;
-            case "mpg123":
-                
-                var scale = Math.Clamp((int)Math.Round(32768 * (volumePercent / 100.0)), 0, 32768);
-                psi.ArgumentList.Add("-f");
-                psi.ArgumentList.Add(scale.ToString());
-                break;
-        }
+            AppendStartOffsetArguments(psi, backend.Name, startSeconds);
+        AppendVolumeArguments(psi, backend.Name, volumePercent, out mpvIpcPath);
 
-        if (backend.Name == "mpv")
+        if (backend.Name == MpvBackend)
             psi.ArgumentList.Add("--");
 
         psi.ArgumentList.Add(filePath);
@@ -198,18 +169,18 @@ internal sealed class ExternalAudioPlayer : IAudioPlayer
 
         var payload = Encoding.UTF8.GetBytes(
             $"{{\"command\":[\"set_property\",\"volume\",{volumePercent}]}}\n");
-        for (var attempt = 0; attempt < 6; attempt++)
+        for (int attempt = 0; attempt < MpvVolumeRetryCount; attempt++)
         {
             try
             {
-                using var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+                using Socket socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
                 socket.Connect(new UnixDomainSocketEndPoint(_mpvIpcPath));
                 socket.Send(payload);
                 return true;
             }
             catch
             {
-                Thread.Sleep(25);
+                Thread.Sleep(MpvVolumeRetryDelayMs);
             }
         }
 
@@ -258,7 +229,7 @@ internal sealed class ExternalAudioPlayer : IAudioPlayer
 
             using var kill = Process.Start(psi);
             if (kill is null) return false;
-            kill.WaitForExit(500);
+            kill.WaitForExit(SignalWaitTimeoutMs);
             return kill.ExitCode == 0;
         }
         catch
@@ -271,11 +242,11 @@ internal sealed class ExternalAudioPlayer : IAudioPlayer
     {
         var candidates = new[]
         {
-            new Backend("mpv", "mpv", ["--no-video", "--really-quiet", "--input-terminal=no"]),
-            new Backend("ffplay", "ffplay", ["-nodisp", "-autoexit", "-loglevel", "quiet", "-nostdin"]),
-            new Backend("mpg123", "mpg123", ["-q"]),
-            new Backend("cvlc", "cvlc", ["--intf", "dummy", "--play-and-exit", "--no-video", "--quiet"]),
-            new Backend("vlc", "vlc", ["--intf", "dummy", "--play-and-exit", "--no-video", "--quiet"])
+            new Backend(MpvBackend, MpvBackend, ["--no-video", "--really-quiet", "--input-terminal=no"]),
+            new Backend(FfplayBackend, FfplayBackend, ["-nodisp", "-autoexit", "-loglevel", "quiet", "-nostdin"]),
+            new Backend(Mpg123Backend, Mpg123Backend, ["-q"]),
+            new Backend(CvlcBackend, CvlcBackend, ["--intf", "dummy", "--play-and-exit", "--no-video", "--quiet"]),
+            new Backend(VlcBackend, VlcBackend, ["--intf", "dummy", "--play-and-exit", "--no-video", "--quiet"])
         };
 
         foreach (var candidate in candidates)
@@ -310,4 +281,56 @@ internal sealed class ExternalAudioPlayer : IAudioPlayer
     }
 
     private sealed record Backend(string Name, string Command, string[] FixedArgs);
+
+    private static void AppendStartOffsetArguments(ProcessStartInfo psi, string backendName, int startSeconds)
+    {
+        switch (backendName)
+        {
+            case FfplayBackend:
+                psi.ArgumentList.Add("-ss");
+                psi.ArgumentList.Add(startSeconds.ToString());
+                break;
+            case MpvBackend:
+                psi.ArgumentList.Add($"--start={startSeconds}");
+                break;
+            case CvlcBackend:
+            case VlcBackend:
+                psi.ArgumentList.Add($"--start-time={startSeconds}");
+                break;
+        }
+    }
+
+    private static void AppendVolumeArguments(
+        ProcessStartInfo psi,
+        string backendName,
+        int volumePercent,
+        out string? mpvIpcPath)
+    {
+        mpvIpcPath = null;
+
+        switch (backendName)
+        {
+            case FfplayBackend:
+                psi.ArgumentList.Add("-volume");
+                psi.ArgumentList.Add(volumePercent.ToString());
+                return;
+            case MpvBackend:
+                psi.ArgumentList.Add($"--volume={volumePercent}");
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    mpvIpcPath = Path.Combine(Path.GetTempPath(), $"vibevault-mpv-{Guid.NewGuid():N}.sock");
+                    psi.ArgumentList.Add($"--input-ipc-server={mpvIpcPath}");
+                }
+                return;
+            case CvlcBackend:
+            case VlcBackend:
+                psi.ArgumentList.Add($"--volume={Math.Clamp(volumePercent * 2, 0, 200)}");
+                return;
+            case Mpg123Backend:
+                int scale = Math.Clamp((int)Math.Round(32768 * (volumePercent / 100.0)), 0, 32768);
+                psi.ArgumentList.Add("-f");
+                psi.ArgumentList.Add(scale.ToString());
+                return;
+        }
+    }
 }

@@ -8,11 +8,11 @@ internal static class AudioPlayerFactory
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            var naudio = new WindowsNaudioAudioPlayer();
+            WindowsNaudioAudioPlayer naudio = new WindowsNaudioAudioPlayer();
             if (naudio.IsAvailable) return naudio;
             naudio.Dispose();
 
-            var winmm = new WindowsMciAudioPlayer();
+            WindowsMciAudioPlayer winmm = new WindowsMciAudioPlayer();
             if (winmm.IsAvailable) return winmm;
             winmm.Dispose();
         }
