@@ -22,29 +22,10 @@ internal sealed class TerminalGlyphProfile
         var forceUnicode = ReadBoolEnv("VIBEVAULT_UNICODE");
         if (forceUnicode.HasValue) return new TerminalGlyphProfile(!forceUnicode.Value);
 
-        if (!OperatingSystem.IsWindows()) return new TerminalGlyphProfile(false);
-
-        var termProgram = Environment.GetEnvironmentVariable("TERM_PROGRAM");
-        var term = Environment.GetEnvironmentVariable("TERM");
-        var inWindowsTerminal = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WT_SESSION"));
-        var inVsCodeTerminal = string.Equals(termProgram, "vscode", StringComparison.OrdinalIgnoreCase);
-        var inWezTerm = string.Equals(termProgram, "wezterm", StringComparison.OrdinalIgnoreCase);
-        var inConEmu = string.Equals(
-            Environment.GetEnvironmentVariable("ConEmuANSI"),
-            "ON",
-            StringComparison.OrdinalIgnoreCase);
-        var termLooksModern = !string.IsNullOrWhiteSpace(term) && (
-            term.Contains("xterm", StringComparison.OrdinalIgnoreCase) ||
-            term.Contains("wezterm", StringComparison.OrdinalIgnoreCase) ||
-            term.Contains("msys", StringComparison.OrdinalIgnoreCase) ||
-            term.Contains("cygwin", StringComparison.OrdinalIgnoreCase) ||
-            term.Contains("mintty", StringComparison.OrdinalIgnoreCase));
-
-        // Windows code page alone is not reliable: classic hosts can be UTF-8
-        // yet still render many UI glyphs as '?' depending on font/renderer.
-        var unicodeSafeHost = inWindowsTerminal || inVsCodeTerminal || inWezTerm || inConEmu || termLooksModern;
-        var useAscii = !unicodeSafeHost;
-        return new TerminalGlyphProfile(useAscii);
+        // Default to Unicode/Tessera across hosts (including classic Windows console)
+        // so borders and visual glyphs match Linux. Users can still force ASCII via
+        // VIBEVAULT_ASCII=1 when running in a font/host that cannot render glyphs.
+        return new TerminalGlyphProfile(useAscii: false);
     }
 
     public string Normalize(string? text)
