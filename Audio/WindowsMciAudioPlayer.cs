@@ -137,7 +137,7 @@ internal sealed class WindowsMciAudioPlayer : IAudioPlayer
         return buffer.ToString().Trim();
     }
 
-    [DllImport("winmm.dll", CharSet = CharSet.Unicode)]
+    [DllImport("winmm.dll", EntryPoint = "mciSendStringW", CharSet = CharSet.Unicode)]
     private static extern int MciSendString(
         string command,
         StringBuilder? returnValue,
