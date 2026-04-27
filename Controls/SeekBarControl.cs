@@ -30,6 +30,7 @@ internal sealed class SeekBarControl : Control
     public TesseraStyle KnobStyle { get; set; } = TesseraStyle.Empty;
     public string FocusMarker { get; set; } = "✦";
     public bool UseAsciiGlyphs { get; set; }
+    public bool UseLegacyUnicodeGlyphs { get; set; }
 
     public bool TryGetRatioFromPoint(int x, int y, out double ratio)
     {
@@ -63,8 +64,8 @@ internal sealed class SeekBarControl : Control
 
         var ratio = TotalSeconds > 0 ? Math.Clamp(CurrentSeconds / (double)TotalSeconds, 0, 1) : 0;
         var status = IsPlaying
-            ? (UseAsciiGlyphs ? "> LIVE" : "▶ LIVE")
-            : (UseAsciiGlyphs ? "|| HOLD" : "▌▌ HOLD");
+            ? (UseAsciiGlyphs ? "> LIVE" : UseLegacyUnicodeGlyphs ? "► LIVE" : "▶ LIVE")
+            : (UseAsciiGlyphs ? "|| HOLD" : UseLegacyUnicodeGlyphs ? "▮▮ HOLD" : "▌▌ HOLD");
         var vol = Math.Clamp(VolumePercent, 0, 100);
         var percent = (int)Math.Round(ratio * 100);
         var leftChip = $"[{status}]";
@@ -98,8 +99,8 @@ internal sealed class SeekBarControl : Control
         var leftText = BuildRail(Math.Clamp(head, 0, width), true);
         var rightText = BuildRail(Math.Clamp(width - head - 1, 0, width), false);
         var knob = IsPlaying
-            ? (UseAsciiGlyphs ? "*" : "◆")
-            : (UseAsciiGlyphs ? "o" : "◇");
+            ? (UseAsciiGlyphs ? "*" : UseLegacyUnicodeGlyphs ? "■" : "◆")
+            : (UseAsciiGlyphs ? "o" : UseLegacyUnicodeGlyphs ? "□" : "◇");
 
         if (!string.IsNullOrEmpty(leftText))
             canvas.WriteText(_lastBarRect.X, _lastBarRect.Y, Styled(FillStyle, leftText), leftText.Length);
@@ -111,15 +112,21 @@ internal sealed class SeekBarControl : Control
     private string BuildVolumeMeter(int volumePercent, int bars)
     {
         var fill = (int)Math.Round((Math.Clamp(volumePercent, 0, 100) / 100.0) * bars);
-        return "[" + new string(UseAsciiGlyphs ? '#' : '▮', Math.Clamp(fill, 0, bars))
-            + new string(UseAsciiGlyphs ? '-' : '▯', Math.Clamp(bars - fill, 0, bars))
+        var fillGlyph = UseAsciiGlyphs ? '#' : UseLegacyUnicodeGlyphs ? '█' : '▮';
+        var emptyGlyph = UseAsciiGlyphs ? '-' : UseLegacyUnicodeGlyphs ? '░' : '▯';
+        return "[" + new string(fillGlyph, Math.Clamp(fill, 0, bars))
+            + new string(emptyGlyph, Math.Clamp(bars - fill, 0, bars))
             + "]";
     }
 
     private string BuildRail(int length, bool filled)
     {
         if (length <= 0) return string.Empty;
-        var pattern = UseAsciiGlyphs ? (filled ? "##" : "--") : (filled ? "█▓" : "─┄");
+        var pattern = UseAsciiGlyphs
+            ? (filled ? "##" : "--")
+            : UseLegacyUnicodeGlyphs
+                ? (filled ? "█▓" : "░▒")
+                : (filled ? "█▓" : "─┄");
         var chars = new char[length];
         for (var i = 0; i < length; i++)
             chars[i] = pattern[i % pattern.Length];
