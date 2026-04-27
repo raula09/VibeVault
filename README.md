@@ -89,12 +89,6 @@ dotnet restore
 dotnet run
 ```
 
-### Download Link vs Terminal Install
-
-For this project, terminal install is better for active development and quick testing.
-
-- Use terminal install when iterating locally (`scripts/install-local.*`)
-- Use release download links once you publish artifacts from `dist/` to your release page
 
 ## Keybindings
 
