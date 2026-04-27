@@ -631,45 +631,30 @@ internal sealed partial class VibeVaultApp : TesseraApp
         _browserList.Title = N(_browserList.Title);
         _addToPlaylistList.EmptyMessage = N(_addToPlaylistList.EmptyMessage);
 
-        if (!_glyphProfile.UseAscii && !_glyphProfile.UseLegacyTesseraGlyphs) return;
+        if (!_glyphProfile.UseAscii) return;
 
         var focus = _glyphProfile.FocusMarker;
         var border = _glyphProfile.BorderStyle;
-        var useAsciiGlyphs = _glyphProfile.UseAscii;
-        var useLegacyTesseraGlyphs = _glyphProfile.UseLegacyTesseraGlyphs;
 
         _nowPlaying.Border = border;
 
         _seekBar.Border = border;
         _seekBar.FocusMarker = focus;
-        _seekBar.UseAsciiGlyphs = useAsciiGlyphs;
-        _seekBar.UseLegacyTesseraGlyphs = useLegacyTesseraGlyphs;
+        _seekBar.UseAsciiGlyphs = true;
 
         _audioMeter.Border = border;
         _audioMeter.FocusMarker = focus;
-        _audioMeter.UseAsciiGlyphs = useAsciiGlyphs;
-        _audioMeter.UseLegacyTesseraGlyphs = useLegacyTesseraGlyphs;
+        _audioMeter.UseAsciiGlyphs = true;
 
         _albumArtVisualizer.Border = border;
         _albumArtVisualizer.FocusMarker = focus;
-        _albumArtVisualizer.UseAsciiGlyphs = useAsciiGlyphs;
+        _albumArtVisualizer.UseAsciiGlyphs = true;
 
-        if (_glyphProfile.UseAscii)
-        {
-            ConfigureList(_libraryList, border, focus, "*", ">", ".");
-            ConfigureList(_playlistPanel, border, focus, "*", ">", ".");
-            ConfigureList(_playlistTracks, border, focus, "*", ">", ".");
-            ConfigureList(_browserList, border, focus, "*", ">", ".");
-            ConfigureList(_addToPlaylistList, border, focus, "*", ">", ".");
-        }
-        else if (_glyphProfile.UseLegacyTesseraGlyphs)
-        {
-            ConfigureList(_libraryList, border, focus, "■", "◆", "•");
-            ConfigureList(_playlistPanel, border, focus, "■", "◆", "•");
-            ConfigureList(_playlistTracks, border, focus, "■", "◆", "•");
-            ConfigureList(_browserList, border, focus, "■", "◆", "•");
-            ConfigureList(_addToPlaylistList, border, focus, "■", "◆", "•");
-        }
+        ConfigureList(_libraryList, border, focus, "*", ">", ".");
+        ConfigureList(_playlistPanel, border, focus, "*", ">", ".");
+        ConfigureList(_playlistTracks, border, focus, "*", ">", ".");
+        ConfigureList(_browserList, border, focus, "*", ">", ".");
+        ConfigureList(_addToPlaylistList, border, focus, "*", ">", ".");
 
         _playerStats.Border = border;
         _libraryStats.Border = border;
