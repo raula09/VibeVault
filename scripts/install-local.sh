@@ -183,6 +183,21 @@ cp -a "${PUBLISH_DIR}/." "${INSTALL_APP_DIR}/"
 ln -sf "${INSTALL_APP_DIR}/VibeVault" "${INSTALL_BIN_DIR}/vibevault"
 chmod +x "${INSTALL_APP_DIR}/VibeVault" "${INSTALL_BIN_DIR}/vibevault"
 
+# Make `vibevault` immediately available in fish, even if ~/.local/bin is
+# not on PATH for the current session yet.
+if command_exists fish; then
+  fish -c "fish_add_path -g '${INSTALL_BIN_DIR}'" >/dev/null 2>&1 || true
+
+  FISH_FUNCTIONS_DIR="${HOME}/.config/fish/functions"
+  FISH_VV_FUNCTION="${FISH_FUNCTIONS_DIR}/vibevault.fish"
+  mkdir -p "${FISH_FUNCTIONS_DIR}"
+  cat > "${FISH_VV_FUNCTION}" <<'EOF'
+function vibevault --description "Launch VibeVault"
+    ~/.local/bin/vibevault $argv
+end
+EOF
+fi
+
 echo "Installed: ${INSTALL_BIN_DIR}/vibevault"
 if command -v vibevault >/dev/null 2>&1; then
   echo "Run with: vibevault"
