@@ -200,6 +200,14 @@ if [[ ":$PATH:" != *":${INSTALL_BIN_DIR}:"* ]]; then
       echo "Updated PATH in ${RC_FILE}"
     fi
   done
+
+  FISH_CONFIG_DIR="${HOME}/.config/fish/conf.d"
+  FISH_PATH_FILE="${FISH_CONFIG_DIR}/vibevault_path.fish"
+  mkdir -p "${FISH_CONFIG_DIR}"
+  if [[ ! -f "${FISH_PATH_FILE}" ]] || ! grep -Fq "${INSTALL_BIN_DIR}" "${FISH_PATH_FILE}"; then
+    printf 'fish_add_path -g "%s"\n' "${INSTALL_BIN_DIR}" > "${FISH_PATH_FILE}"
+    echo "Updated PATH for fish in ${FISH_PATH_FILE}"
+  fi
 fi
 
 echo "Open a new terminal (or run: export PATH=\"\$HOME/.local/bin:\$PATH\")"
