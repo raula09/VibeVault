@@ -210,4 +210,6 @@ if [[ ":$PATH:" != *":${INSTALL_BIN_DIR}:"* ]]; then
   fi
 fi
 
-echo "Open a new terminal (or run: export PATH=\"\$HOME/.local/bin:\$PATH\")"
+echo "Open a new terminal."
+echo "Bash/Zsh run-now: export PATH=\"\$HOME/.local/bin:\$PATH\""
+echo "Fish run-now: source \"\$HOME/.config/fish/conf.d/vibevault_path.fish\""
