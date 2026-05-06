@@ -75,10 +75,23 @@ internal sealed partial class VibeVaultState
         _playlistPanelSelected = Math.Clamp(_playlistPanelSelected + delta, 0, Math.Max(0, _playlists.Count - 1));
     }
 
+    public void SetPlaylistPanelSelection(int index)
+    {
+        _playlistPanelSelected = Math.Clamp(index, 0, Math.Max(0, _playlists.Count - 1));
+    }
+
     public void MovePlaylistTrackSelection(int delta)
     {
         var visible = BuildVisiblePlaylistTrackIndices();
         _playlistTrackSelected = MoveWithinVisibleIndices(_playlistTrackSelected, delta, visible, _playlistTracks.Count);
+    }
+
+    public void SetVisiblePlaylistTrackSelection(int visibleIndex)
+    {
+        var visible = BuildVisiblePlaylistTrackIndices();
+        if (visible.Count == 0) return;
+        var safe = Math.Clamp(visibleIndex, 0, visible.Count - 1);
+        _playlistTrackSelected = visible[safe];
     }
 
     public void EnqueuePlaylistTrackSelected()
@@ -203,6 +216,20 @@ internal sealed partial class VibeVaultState
         _addToPlaylistSelected = Math.Clamp(_addToPlaylistSelected + delta, 0, Math.Max(0, _playlists.Count - 1));
     }
 
+    public void SetAddToPlaylistSelection(int index)
+    {
+        _addToPlaylistSelected = Math.Clamp(index, 0, Math.Max(0, _playlists.Count - 1));
+    }
+
+    public void SetVisibleLibrarySelection(int visibleIndex)
+    {
+        var visible = BuildVisibleLibraryIndices();
+        if (visible.Count == 0) return;
+        var safe = Math.Clamp(visibleIndex, 0, visible.Count - 1);
+        _librarySelected = visible[safe];
+        _libraryRangeAnchor = _librarySelected;
+    }
+
     public void ConfirmAddToPlaylist()
     {
         if (_library.Count == 0 || _playlists.Count == 0)
@@ -250,6 +277,49 @@ internal sealed partial class VibeVaultState
     {
         _newPlaylistName = string.Empty;
         View = AppView.NewPlaylist;
+    }
+
+    public void StartDeletePlaylistDialog()
+    {
+        if (_playlists.Count == 0)
+        {
+            SetStatus("no playlists to delete");
+            return;
+        }
+
+        _playlistPanelSelected = Math.Clamp(_playlistPanelSelected, 0, _playlists.Count - 1);
+        View = AppView.DeletePlaylistConfirm;
+    }
+
+    public void ConfirmDeletePlaylist()
+    {
+        if (_playlists.Count == 0)
+        {
+            View = AppView.Playlists;
+            return;
+        }
+
+        var selectedIndex = Math.Clamp(_playlistPanelSelected, 0, _playlists.Count - 1);
+        var playlist = _playlists[selectedIndex];
+
+        _db.DeletePlaylist(playlist.Id);
+
+        if (_activePlaylistId == playlist.Id)
+        {
+            _activePlaylistId = null;
+            _playlistTracks.Clear();
+            _queueFromPlaylist = false;
+        }
+
+        Reload();
+        _playlistPanelSelected = Math.Clamp(_playlistPanelSelected, 0, Math.Max(0, _playlists.Count - 1));
+        View = AppView.Playlists;
+        SetStatus($"deleted  {playlist.Name}");
+    }
+
+    public void CancelDeletePlaylistDialog()
+    {
+        View = AppView.Playlists;
     }
 
     public void NewPlaylistAppendChar(char c)

@@ -35,9 +35,36 @@ internal sealed class ScrollListControl : Control
     public void SetItems(IReadOnlyList<ListItem> items) =>
         _items = items ?? Array.Empty<ListItem>();
 
+    private Rect _lastRenderRect;
+    private Rect _lastContentRect;
+    private int _lastStartIndex;
+
+    public bool ContainsPoint(int x, int y) =>
+        !_lastRenderRect.IsEmpty &&
+        x >= _lastRenderRect.X &&
+        x < _lastRenderRect.Right &&
+        y >= _lastRenderRect.Y &&
+        y < _lastRenderRect.Bottom;
+
+    public bool TryGetItemIndexAtPoint(int x, int y, out int itemIndex)
+    {
+        itemIndex = -1;
+        if (_items.Count == 0 || _lastContentRect.IsEmpty) return false;
+        if (x < _lastContentRect.X || x >= _lastContentRect.Right) return false;
+        if (y < _lastContentRect.Y || y >= _lastContentRect.Bottom) return false;
+
+        var row = y - _lastContentRect.Y;
+        var idx = _lastStartIndex + row;
+        if (idx < 0 || idx >= _items.Count) return false;
+
+        itemIndex = idx;
+        return true;
+    }
+
     public override void Render(Canvas canvas, Rect rect)
     {
         var clipped = Rect.Intersect(rect, canvas.Bounds);
+        _lastRenderRect = clipped;
         if (clipped.IsEmpty) return;
 
         var titleText = IsFocused
@@ -47,6 +74,7 @@ internal sealed class ScrollListControl : Control
         canvas.DrawBox(clipped, titleText, Border, border);
 
         var content = clipped.Inset(1, 1).Inset(Padding);
+        _lastContentRect = content;
         if (content.IsEmpty) return;
         ControlCanvasHelpers.ClearContent(canvas, content);
 
@@ -59,6 +87,7 @@ internal sealed class ScrollListControl : Control
         var start = 0;
         if (_items.Count > content.Height)
             start = Math.Clamp(SelectedIndex - content.Height / 2, 0, _items.Count - content.Height);
+        _lastStartIndex = start;
 
         for (var row = 0; row < content.Height && start + row < _items.Count; row++)
         {

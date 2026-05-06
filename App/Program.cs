@@ -17,7 +17,7 @@ var app = TesseraApplication.CreateBuilder()
             WindowTitle = "VibeVault",
             EnableFocusReporting = false,
             EnableBracketedPaste = false,
-            MouseTracking = MouseTrackingMode.None
+            MouseTracking = MouseTrackingMode.AllMotion
         };
     })
     .Build();

@@ -9,7 +9,8 @@ internal sealed record GoogleDriveDownloadResult(
     int FailedDownloads,
     string? Error);
 
-internal static class GoogleDriveFolderDownloader
+internal static class 
+    GoogleDriveFolderDownloader
 {
     private sealed record FolderRef(string Id, string? ResourceKey, string OriginalLink);
     private sealed record DriveFile(string Id, string Name);

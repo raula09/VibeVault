@@ -11,6 +11,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="VibeVault.TerminalGui/**/*.cs" />
+    <EmbeddedResource Remove="VibeVault.TerminalGui/**" />
+    <None Remove="VibeVault.TerminalGui/**" />
+
+    <PackageReference Include="Terminal.Gui" Version="1.19.0" />
     <PackageReference Include="Tessera" Version="1.0.0-alpha.1" />
 
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.*" />

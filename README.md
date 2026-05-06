@@ -115,7 +115,7 @@ dotnet run
 | `v` | Toggle cover visual mode |
 | `i` | Toggle visual render (`ASCII` / `IMAGE`) in visual mode |
 | `Space` | Play/Pause |
-| `n` / `p` | Next/Previous track (`n` consumes manual queue first) |
+| `n` / `p` | Next/Previous track (`n` in Library/Import/Visualizer; in Playlists use `N` for next) |
 | `q` | Queue selected/focused track(s) in current view |
 | `s` | Shuffle on/off |
 | `+` / `-` | Volume up/down |
@@ -145,7 +145,8 @@ dotnet run
 | `Tab` / `l` / `h` | Switch focus between playlists and tracks |
 | `Enter` | Open playlist / play focused track |
 | `q` | Queue focused playlist track |
-| `n` | If queue has items: play next queued track; otherwise create new playlist |
+| `n` | Create new playlist |
+| `N` | Next track |
 | `r` | Remove selected track from active playlist |
 | `D` | Delete active playlist |
 | `Ctrl+F` | Search playlist tracks |

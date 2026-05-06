@@ -166,7 +166,24 @@ internal sealed partial class VibeVaultState
 
     private void PlaySelected()
     {
+        if (View == AppView.Playlists && _activePlaylistId is not null && _playlistTracks.Count > 0)
+        {
+            var visiblePlaylist = BuildVisiblePlaylistTrackIndices();
+            if (visiblePlaylist.Count == 0) return;
+
+            if (!visiblePlaylist.Contains(_playlistTrackSelected))
+                _playlistTrackSelected = visiblePlaylist[0];
+
+            _queueFromPlaylist = true;
+            PlayTrack(_playlistTracks[_playlistTrackSelected]);
+            return;
+        }
+
         if (_library.Count == 0) return;
+
+        var visibleLibrary = BuildVisibleLibraryIndices();
+        if (visibleLibrary.Count > 0 && !visibleLibrary.Contains(_librarySelected))
+            _librarySelected = visibleLibrary[0];
 
         _queueFromPlaylist = false;
         PlayTrack(_library[_librarySelected]);

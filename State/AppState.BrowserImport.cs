@@ -17,6 +17,12 @@ internal sealed partial class VibeVaultState
         SelectBrowserRange(_browserRangeAnchor, _browserSelected);
     }
 
+    public void SetBrowserSelection(int index)
+    {
+        _browserSelected = Math.Clamp(index, 0, Math.Max(0, _browserEntries.Count - 1));
+        _browserRangeAnchor = _browserSelected;
+    }
+
     public void OpenBrowser()
     {
         SwitchView(AppView.Browser);

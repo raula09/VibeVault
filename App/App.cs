@@ -230,12 +230,112 @@ internal sealed partial class VibeVaultApp : TesseraApp
         switch (message)
         {
             case KeyPressed key: return HandleKey(key);
+            case PointerInput pointer:
+                return HandlePointerInput(pointer) ? null : null;
             case TickMessage:
                 _state.Tick();
                 _visualFrameCounter++;
                 return null;
             default:             return TryHandleMouseSeek(message) ? null : null;
         }
+    }
+
+    private bool HandlePointerInput(PointerInput pointer)
+    {
+        switch (pointer.Kind)
+        {
+            case PointerEventKind.Wheel:
+                if (pointer.Button == PointerButton.WheelUp)
+                    return HandleMouseScroll(pointer.X, pointer.Y, +1);
+                if (pointer.Button == PointerButton.WheelDown)
+                    return HandleMouseScroll(pointer.X, pointer.Y, -1);
+                return false;
+
+            case PointerEventKind.Press:
+                if (TryHandleSegmentTap(pointer.X, pointer.Y))
+                    return true;
+                if (TrySelectListItemAtPoint(pointer.X, pointer.Y))
+                    return true;
+                if (_seekBar.TryGetRatioFromPoint(pointer.X, pointer.Y, out var ratio))
+                {
+                    _mouseSeekActive = true;
+                    _state.SeekToRatio(ratio);
+                    return true;
+                }
+                return false;
+
+            case PointerEventKind.Motion:
+                if (!_mouseSeekActive) return false;
+                if (_seekBar.TryGetRatioFromPoint(pointer.X, pointer.Y, out var dragRatio))
+                {
+                    _state.SeekToRatio(dragRatio);
+                    return true;
+                }
+                return false;
+
+            case PointerEventKind.Release:
+                if (_mouseSeekActive)
+                {
+                    _mouseSeekActive = false;
+                    if (_seekBar.TryGetRatioFromPoint(pointer.X, pointer.Y, out var releaseRatio))
+                        _state.SeekToRatio(releaseRatio);
+                    return true;
+                }
+
+                // Touchpad taps may arrive as release-only pointer events.
+                if (pointer.ClickCount > 0 && TrySelectListItemAtPoint(pointer.X, pointer.Y))
+                    return true;
+                return false;
+
+            default:
+                return false;
+        }
+    }
+
+    private bool TryHandleSegmentTap(int x, int y)
+    {
+        if (_workspaceTabs.TryGetSegmentIndexAtPoint(x, y, out var workspaceIndex))
+        {
+            switch (workspaceIndex)
+            {
+                case 0: SwitchToView(AppView.Library); return true;
+                case 1: SwitchToView(AppView.Playlists); return true;
+                case 2: _state.OpenBrowser(); return true;
+                case 3: ToggleVisualizerView(); return true;
+            }
+        }
+
+        if (_modeChips.TryGetSegmentIndexAtPoint(x, y, out var modeIndex))
+        {
+            switch (modeIndex)
+            {
+                case 0:
+                    _state.TogglePlayPause();
+                    return true;
+                case 1:
+                    _state.ToggleShuffle();
+                    return true;
+                case 2:
+                    CycleUiPalette();
+                    return true;
+                case 3:
+                    ToggleVisualizerView();
+                    return true;
+                case 4:
+                    ToggleVisualizerRenderMode();
+                    return true;
+                case 5:
+                    ToggleCommandDeck();
+                    return true;
+                case 6:
+                    ToggleActivityFeed();
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        return false;
     }
 
     public override Screen Build(ScreenContext context)
@@ -538,8 +638,8 @@ internal sealed partial class VibeVaultApp : TesseraApp
                 break;
 
             case AppView.Playlists:
-                rows.Add(new("Lists", N("j/k move playlists · Enter open · n new · D delete")));
-                rows.Add(new("Tracks", N("Tab/l toggle panes · h move left · j/k move · Enter play · q queue · r remove")));
+                rows.Add(new("Lists", N("j/k move playlists · Enter open · n new · D delete (confirm)")));
+                rows.Add(new("Tracks", N("Tab/l toggle panes · h move left · j/k move · Enter play · N next · q queue · a add · r remove")));
                 rows.Add(new("Search", "Ctrl+F filters playlist tracks by title/artist/album"));
                 break;
 
@@ -566,6 +666,10 @@ internal sealed partial class VibeVaultApp : TesseraApp
                 rows.Add(new("Dialog", "Paste public Google Drive folder link"));
                 rows.Add(new("Dialog", N("Enter import mp3 · Esc cancel")));
                 break;
+
+            case AppView.DeletePlaylistConfirm:
+                rows.Add(new("Dialog", N("Enter confirm delete · Esc cancel")));
+                break;
         }
 
         return rows;
@@ -573,13 +677,17 @@ internal sealed partial class VibeVaultApp : TesseraApp
 
     private bool TryHandleMouseSeek(Message message)
     {
-        var typeName = message.GetType().Name;
         var x = TryReadInt(message, "X", "Column", "Col");
         var y = TryReadInt(message, "Y", "Row", "Line");
+        var scrollDelta = TryReadScrollDelta(message);
 
-        if (typeName == "MouseClickMsg")
+        if (scrollDelta is not null && x is not null && y is not null)
+            return HandleMouseScroll(x.Value, y.Value, scrollDelta.Value);
+
+        if (x is not null && y is not null && IsMouseClickLike(message))
         {
-            if (x is null || y is null) return false;
+            if (TrySelectListItemAtPoint(x.Value, y.Value))
+                return true;
             if (!_seekBar.TryGetRatioFromPoint(x.Value, y.Value, out var ratio))
                 return false;
             _mouseSeekActive = true;
@@ -587,7 +695,7 @@ internal sealed partial class VibeVaultApp : TesseraApp
             return true;
         }
 
-        if (typeName == "MouseMotionMsg")
+        if (IsMouseMotionLike(message))
         {
             if (!_mouseSeekActive || x is null || y is null) return false;
             if (!_seekBar.TryGetRatioFromPoint(x.Value, y.Value, out var ratio))
@@ -596,13 +704,144 @@ internal sealed partial class VibeVaultApp : TesseraApp
             return true;
         }
 
-        if (typeName == "MouseReleaseMsg")
+        if (IsMouseReleaseLike(message))
         {
             if (!_mouseSeekActive) return false;
             _mouseSeekActive = false;
             if (x is null || y is null) return true;
             if (_seekBar.TryGetRatioFromPoint(x.Value, y.Value, out var ratio))
                 _state.SeekToRatio(ratio);
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsMouseClickLike(object source)
+    {
+        var typeName = source.GetType().Name;
+        if (typeName.Contains("Click", StringComparison.OrdinalIgnoreCase) ||
+            typeName.Contains("Press", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var eventType = ReadStringProperty(source, "EventType");
+        if (string.IsNullOrWhiteSpace(eventType)) return false;
+        return eventType.Contains("Click", StringComparison.OrdinalIgnoreCase) ||
+               eventType.Contains("Press", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsMouseMotionLike(object source)
+    {
+        var typeName = source.GetType().Name;
+        if (typeName.Contains("Motion", StringComparison.OrdinalIgnoreCase) ||
+            typeName.Contains("Move", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var eventType = ReadStringProperty(source, "EventType");
+        if (string.IsNullOrWhiteSpace(eventType)) return false;
+        return eventType.Contains("Motion", StringComparison.OrdinalIgnoreCase) ||
+               eventType.Contains("Move", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsMouseReleaseLike(object source)
+    {
+        var typeName = source.GetType().Name;
+        if (typeName.Contains("Release", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var eventType = ReadStringProperty(source, "EventType");
+        if (string.IsNullOrWhiteSpace(eventType)) return false;
+        return eventType.Contains("Release", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool HandleMouseScroll(int x, int y, int delta)
+    {
+        if (delta == 0) return false;
+        var direction = delta > 0 ? -1 : 1;
+
+        if (_state.View == AppView.Library && _libraryList.ContainsPoint(x, y))
+        {
+            _libraryList.RequestFocus();
+            _state.MoveLibrarySelection(direction);
+            return true;
+        }
+
+        if (_state.View == AppView.Playlists)
+        {
+            if (_playlistPanel.ContainsPoint(x, y))
+            {
+                _playlistPanel.RequestFocus();
+                _state.MovePlaylistPanel(direction);
+                return true;
+            }
+
+            if (_playlistTracks.ContainsPoint(x, y))
+            {
+                _playlistTracks.RequestFocus();
+                _state.MovePlaylistTrackSelection(direction);
+                return true;
+            }
+        }
+
+        if (_state.View == AppView.Browser && _browserList.ContainsPoint(x, y))
+        {
+            _browserList.RequestFocus();
+            _state.MoveBrowserSelection(direction);
+            return true;
+        }
+
+        if (_state.View == AppView.AddToPlaylist && _addToPlaylistList.ContainsPoint(x, y))
+        {
+            _addToPlaylistList.RequestFocus();
+            _state.MoveAddToPlaylistSelection(direction);
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TrySelectListItemAtPoint(int x, int y)
+    {
+        if (_state.View == AppView.Library && _libraryList.ContainsPoint(x, y))
+        {
+            _libraryList.RequestFocus();
+            if (_libraryList.TryGetItemIndexAtPoint(x, y, out var visibleIndex))
+                _state.SetVisibleLibrarySelection(visibleIndex);
+            return true;
+        }
+
+        if (_state.View == AppView.Playlists)
+        {
+            if (_playlistPanel.ContainsPoint(x, y))
+            {
+                _playlistPanel.RequestFocus();
+                if (_playlistPanel.TryGetItemIndexAtPoint(x, y, out var playlistIndex))
+                    _state.SetPlaylistPanelSelection(playlistIndex);
+                return true;
+            }
+
+            if (_playlistTracks.ContainsPoint(x, y))
+            {
+                _playlistTracks.RequestFocus();
+                if (_playlistTracks.TryGetItemIndexAtPoint(x, y, out var visibleIndex))
+                    _state.SetVisiblePlaylistTrackSelection(visibleIndex);
+                return true;
+            }
+        }
+
+        if (_state.View == AppView.Browser && _browserList.ContainsPoint(x, y))
+        {
+            _browserList.RequestFocus();
+            if (_browserList.TryGetItemIndexAtPoint(x, y, out var browserIndex))
+                _state.SetBrowserSelection(browserIndex);
+            return true;
+        }
+
+        if (_state.View == AppView.AddToPlaylist && _addToPlaylistList.ContainsPoint(x, y))
+        {
+            _addToPlaylistList.RequestFocus();
+            if (_addToPlaylistList.TryGetItemIndexAtPoint(x, y, out var playlistIndex))
+                _state.SetAddToPlaylistSelection(playlistIndex);
             return true;
         }
 
@@ -621,6 +860,25 @@ internal sealed partial class VibeVaultApp : TesseraApp
         }
 
         return null;
+    }
+
+    private static string? ReadStringProperty(object source, string name)
+    {
+        var prop = source.GetType().GetProperty(name);
+        if (prop is null) return null;
+        var value = prop.GetValue(source);
+        return value?.ToString();
+    }
+
+    private static int? TryReadScrollDelta(object source)
+    {
+        var t = source.GetType();
+        var typeName = t.Name;
+        if (!typeName.Contains("Scroll", StringComparison.OrdinalIgnoreCase) &&
+            !typeName.Contains("Wheel", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        return TryReadInt(source, "Delta", "DeltaY", "ScrollDelta", "WheelDelta", "Amount");
     }
 
     private static string FormatBrowserEntry(string entry)

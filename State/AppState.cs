@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 
 namespace VibeVault;
 
-internal enum AppView { Library, Playlists, Browser, Visualizer, NewPlaylist, AddToPlaylist, GoogleDriveImport }
+internal enum AppView { Library, Playlists, Browser, Visualizer, NewPlaylist, AddToPlaylist, GoogleDriveImport, DeletePlaylistConfirm }
 
 internal sealed partial class VibeVaultState : IDisposable
 {
@@ -122,6 +122,17 @@ internal sealed partial class VibeVaultState : IDisposable
             }
 
             return $"Add {selection.Count} Tracks To Playlist";
+        }
+    }
+
+    public string DeletePlaylistPrompt
+    {
+        get
+        {
+            if (_playlists.Count == 0) return "Delete selected playlist?";
+            var selectedIndex = Math.Clamp(_playlistPanelSelected, 0, _playlists.Count - 1);
+            var name = _playlists[selectedIndex].Name;
+            return $"Delete playlist \"{name}\"? This cannot be undone.";
         }
     }
 

@@ -41,6 +41,9 @@ internal sealed partial class VibeVaultApp
             case AppView.GoogleDriveImport:
                 ConfigureGoogleDriveImportDialog(body);
                 break;
+            case AppView.DeletePlaylistConfirm:
+                ConfigureDeletePlaylistConfirmDialog(body);
+                break;
         }
     }
 
@@ -172,4 +175,12 @@ internal sealed partial class VibeVaultApp
             column.Fixed(3, search => search.Row(row => row.Fill(_searchBar)));
         }), width: 92, height: 8);
     }
+
+    private void ConfigureDeletePlaylistConfirmDialog(ContentBuilder body)
+    {
+        _dialogLabel.Title = "Delete Playlist";
+        _dialogLabel.Text = $"{_state.DeletePlaylistPrompt}\nEnter confirm  Esc cancel";
+        body.Center(center => center.Row(row => row.Fill(_dialogLabel)), width: 72, height: 6);
+    }
+
 }
